@@ -133,3 +133,7 @@ dmypy.json
 # PROJECT SPECIFIC
 # ----------------
 .ruff_cache/
+
+
+# VSCode live Share settings
+.vsls.json
