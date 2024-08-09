@@ -1,35 +1,82 @@
-import requests
+import os
+
 import parsel
-from ao3_sync.choices import DEFAULT_SYNC_TYPE
+import requests
+from dotenv import load_dotenv
+
+import ao3_sync.choices
+import ao3_sync.exceptions
+
+load_dotenv(override=True)
+
+DEBUG = os.getenv("AO3_DEBUG", False)
 
 
 class AO3:
-    def __init__(self, username, password, sync_type=DEFAULT_SYNC_TYPE):
+    def __init__(self, username, password):
         self._session = requests.Session()
+        self._session.headers.update(
+            {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
+        )
         self._username = username
         self._password = password
-        self._sync_type = sync_type
-        self._bookmarks_url = f"https://archiveofourown.org/users/{self._username}/bookmarks"
 
-    def run(self):
-        self._login(self._username, self._password)
+        self._urls = {
+            ao3_sync.choices.SYNC_TYPES.BOOKMARKS: f"https://archiveofourown.org/users/{self._username}/bookmarks",
+        }
 
-    def _login(self, username, password):
+    def _get_url(self, sync_type):
+        return self._urls[sync_type]
+
+    def _get_cached_file(self, sync_type):
+        if os.path.exists(f"debug_files/{sync_type}.html"):
+            with open(f"debug_files/{sync_type}.html", "r") as f:
+                return f.read()
+
+    def _save_cached_file(self, sync_type, text):
+        with open(f"debug_files/{sync_type}.html", "w") as f:
+            f.write(text)
+
+    def _download_page(self, sync_type, cache=False):
+        if DEBUG or cache:
+            page = self._get_cached_file(sync_type)
+
+        if not page:
+            print("Downloading page...")
+            self._login()
+            page = self._session.get(self._get_url(sync_type))
+
+            if DEBUG or cache:
+                self._save_cached_file(sync_type, page.text)
+
+        if not page:
+            raise ao3_sync.exceptions.FailedDownload()
+
+        return page
+
+    def _login(self):
         login_page = self._session.get("https://archiveofourown.org/users/login")
         authenticity_token = (
             parsel.Selector(login_page.text).css("input[name='authenticity_token']::attr(value)").get()
         )
-        payload = {"user[login]": username, "user[password]": password, "authenticity_token": authenticity_token}
+        payload = {
+            "user[login]": self._username,
+            "user[password]": self._password,
+            "authenticity_token": authenticity_token,
+        }
         # The session in this instance is now logged in
-        login_post = self._session.post(
-            "https://archiveofourown.org/users/login", params=payload, allow_redirects=False
+        login_res = self._session.post(
+            "https://archiveofourown.org/users/login",
+            params=payload,
+            allow_redirects=False,
         )
-        print(login_post)
-        # TODO: deal with a failed login
+        if "auth_error" in login_res.text:
+            raise ao3_sync.exceptions.LoginError("Error logging into AO3")
 
-    def get_bookmarks(self):
-        bookmarks_page = self._session.get(self._bookmarks_url)
-        bookmarks = parsel.Selector(bookmarks_page.text).css("ol.bookmark li")
+    def get_bookmarks(self, cache=False):
+        bookmarks_page = self._download_page(ao3_sync.choices.SYNC_TYPES.BOOKMARKS, cache=cache)
+
+        bookmarks = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 
         for idx, bookmark in enumerate(bookmarks):
-            print(f"{idx + 1}: {bookmark.css("h4.heading a::text").get()}")
+            print(f"{idx + 1}: {bookmark.css("h4.heading").xpath("string()").get().replace('\n', '').strip()}")

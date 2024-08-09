@@ -1,3 +1,17 @@
+# PROJECT SPECIFIC
+# ----------------
+debug_files/
+
+.ruff_cache/
+
+
+# VSCode live Share settings
+.vsls.json
+
+
+# GENERIC PYTHON
+# ----------------
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -127,13 +141,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-
-
-# PROJECT SPECIFIC
-# ----------------
-.ruff_cache/
-
-
-# VSCode live Share settings
-.vsls.json

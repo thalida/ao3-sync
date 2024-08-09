@@ -1,9 +1,8 @@
-from enum import Enum
-
-
-class SYNC_TYPES(Enum):
+class SYNC_TYPES:
     BOOKMARKS = "bookmarks"
 
 
-SYNC_TYPES_VALUES = [e.value for e in SYNC_TYPES]
-DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS.value
+SYNC_TYPES_VALUES = [
+    SYNC_TYPES.BOOKMARKS,
+]
+DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
