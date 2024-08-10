@@ -4,7 +4,6 @@ import parsel
 import requests
 from dotenv import load_dotenv
 
-import ao3_sync.choices
 import ao3_sync.exceptions
 
 load_dotenv(override=True)
@@ -13,6 +12,11 @@ DEBUG = os.getenv("AO3_DEBUG", False)
 
 
 class AO3:
+    class SYNC_TYPES:
+        BOOKMARKS = "bookmarks"
+
+    DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
+
     def __init__(self, username, password):
         self._session = requests.Session()
         self._session.headers.update(
@@ -20,10 +24,19 @@ class AO3:
         )
         self._username = username
         self._password = password
-
         self._download_urls = {
-            ao3_sync.choices.SYNC_TYPES.BOOKMARKS: f"https://archiveofourown.org/users/{self._username}/bookmarks",
+            AO3.SYNC_TYPES.BOOKMARKS: f"https://archiveofourown.org/users/{self._username}/bookmarks",
         }
+
+    @classmethod
+    def get_sync_types_values(cls):
+        return [
+            cls.SYNC_TYPES.BOOKMARKS,
+        ]
+
+    @classmethod
+    def get_default_sync_type(cls):
+        return cls.DEFAULT_SYNC_TYPE
 
     def _get_download_url(self, sync_type):
         return self._download_urls[sync_type]
@@ -52,7 +65,7 @@ class AO3:
         if not page:
             print("Downloading page...")
             self._login()
-            res = self._session.get(self._get_url(sync_type))
+            res = self._session.get(self._get_download_url(sync_type))
             page = res.text
 
             if DEBUG or cache:
@@ -83,7 +96,7 @@ class AO3:
             raise ao3_sync.exceptions.LoginError("Error logging into AO3")
 
     def get_bookmarks(self, cache=False):
-        bookmarks_page = self._download_page(ao3_sync.choices.SYNC_TYPES.BOOKMARKS, cache=cache)
+        bookmarks_page = self._download_page(AO3.SYNC_TYPES.BOOKMARKS, cache=cache)
 
         bookmarks = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 

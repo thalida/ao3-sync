@@ -3,7 +3,6 @@ import os
 import rich_click as click
 from dotenv import load_dotenv
 
-import ao3_sync.choices
 import ao3_sync.exceptions
 from ao3_sync.ao3 import AO3
 
@@ -15,8 +14,8 @@ DEBUG = os.getenv("AO3_DEBUG", False)
 @click.command()
 @click.argument(
     "sync_type",
-    type=click.Choice(ao3_sync.choices.SYNC_TYPES_VALUES, case_sensitive=False),
-    default=ao3_sync.choices.DEFAULT_SYNC_TYPE,
+    type=click.Choice(AO3.get_sync_types_values(), case_sensitive=False),
+    default=AO3.get_default_sync_type(),
 )
 @click.option("-u", "--username", "username", help="AO3 Username", envvar="AO3_USERNAME", required=True)
 @click.option("-p", "--password", "password", help="AO3 Password", envvar="AO3_PASSWORD", required=True)
@@ -35,7 +34,7 @@ def main(sync_type, username, password, dryrun):
 
         if dryrun:
             click.secho(f"[SKIPPED] AO3 fetch {sync_type}", color=True)
-        elif sync_type == ao3_sync.choices.SYNC_TYPES.BOOKMARKS:
+        elif sync_type == AO3.SYNC_TYPES.BOOKMARKS:
             instance.get_bookmarks()
 
         click.secho("DONE!", bold=True, fg="green", color=True)
