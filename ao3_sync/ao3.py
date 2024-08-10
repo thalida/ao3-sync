@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 import parsel
 from dotenv import load_dotenv
@@ -17,13 +18,19 @@ if isinstance(DEBUG, str):
 
 
 class AO3:
+    class CACHE_CATEGORIES:
+        BOOKMARKS = "bookmarks"
+        WORKS = "works"
+        SERIES = "series"
+        DOWNLOADS = "downloads"
+
     class SYNC_TYPES:
         BOOKMARKS = "bookmarks"
 
     DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
 
     def __init__(self, username, password):
-        self._session = LimiterSession(per_second=1)
+        self._session = LimiterSession(per_second=0.5)
         self._session.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
@@ -47,20 +54,21 @@ class AO3:
     def _get_download_url(self, sync_type):
         return self._download_urls[sync_type]
 
-    def _get_cache_filepath(self, sync_type, page=None):
-        return f"debug_files/{sync_type}{f"_{page}" if page else ""}.html"
-
     def _get_tracking_filepath(self, sync_type):
-        return f"debug_files/{sync_type}_last_bookmark_id.txt"
+        return f"debug_files/{sync_type}_last_id.txt"
 
-    def _get_cached_file(self, sync_type, page=None):
-        filepath = self._get_cache_filepath(sync_type, page=page)
+    def _get_cache_filepath(self, cache_category, cache_id=None):
+        return f"debug_files/{cache_category}{f"_{cache_id}" if cache_id else ""}.html"
+
+    def _get_cached_file(self, cache_category, cache_id=None):
+        filepath = self._get_cache_filepath(cache_category, cache_id=cache_id)
+        print(f"Getting cached file: {filepath}")
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 return f.read()
 
-    def _save_cached_file(self, sync_type, text, page=None):
-        filepath = self._get_cache_filepath(sync_type, page=page)
+    def _save_cached_file(self, cache_category, text, cache_id=None):
+        filepath = self._get_cache_filepath(cache_category, cache_id=cache_id)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w") as f:
             f.write(text)
@@ -76,29 +84,41 @@ class AO3:
             with open(filepath, "r") as f:
                 return f.read()
 
-    def _download_page(self, sync_type, cache=False, req_params=None):
+    def _download_page(
+        self,
+        url,
+        req_params=None,
+        cache_category=None,
+        cache_id=None,
+    ):
         downloaded_page = None
-        page = req_params.get("page") if req_params else None
 
-        if DEBUG or cache:
-            print("Getting cached file...")
-            downloaded_page = self._get_cached_file(sync_type, page=page)
+        if DEBUG:
+            downloaded_page = self._get_cached_file(cache_category, cache_id=cache_id)
 
         if not downloaded_page:
-            url = self._get_download_url(sync_type)
             self._login()
             logger.debug(f"Downloading page {url} with params {req_params}")
             res = self._session.get(url, params=req_params)
             downloaded_page = res.text
 
-            if DEBUG or cache:
+            if DEBUG:
                 print("Saving file to cache...")
-                self._save_cached_file(sync_type, downloaded_page, page=page)
+                self._save_cached_file(cache_category, downloaded_page, cache_id=cache_id)
 
         if not downloaded_page:
             raise ao3_sync.exceptions.FailedDownload("Failed to download page")
 
         return downloaded_page
+
+    def _download_work(self, relative_path):
+        download_link = f"https://archiveofourown.org{relative_path}"
+        link_parts = urlparse(download_link)
+        filename = os.path.basename(link_parts.path)
+        r = self._session.get(download_link, allow_redirects=True)
+        os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
+        with open(f"downloads/{filename}", "wb") as f:
+            f.write(r.content)
 
     def _login(self):
         if self._logged_in:
@@ -125,38 +145,69 @@ class AO3:
 
         self._logged_in = True
 
-    def sync_bookmarks(self, paginate=True, req_params=None, cache=False):
+    def sync_bookmarks(self, paginate=True, req_params=None, force_update=False):
         """
         Sync bookmarks from AO3
         using the cache file, find out what bookmarks are missing and download them
         """
-        bookmarks = self.get_bookmarks(paginate=paginate, override_req_params=req_params, cache=cache)
+        bookmarks = self.get_bookmarks(paginate=paginate, req_params=req_params, force_update=force_update)
+        # bookmarks are already sorted from oldest to newest, so no need to reverse
         for bookmark in bookmarks:
-            debug_print(bookmark)
+            if bookmark.object.type == ObjectTypes.SERIES:
+                debug_print("Skipping series bookmark", bookmark.object.title)
+                self._update_last_tracked(AO3.SYNC_TYPES.BOOKMARKS, bookmark.id)
+                continue
+
+            work = bookmark.object
+            work_page = self._download_page(
+                work.url,
+                cache_category=AO3.CACHE_CATEGORIES.WORKS,
+                cache_id=work.id,
+            )
+            download_links = (
+                parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
+            )
+            for link_path in download_links:
+                try:
+                    self._download_work(link_path)
+                except Exception as e:
+                    logger.error(f"Error downloading work: {work.title} {link_path}")
+                    logger.error(e)
+
+            self._update_last_tracked(AO3.SYNC_TYPES.BOOKMARKS, bookmark.id)
+            debug_print("Downloaded work:", work.title)
 
         debug_print("Count of bookmarks:", len(bookmarks))
 
     def get_bookmarks(
         self,
         paginate=True,
-        override_req_params=None,
-        cache=False,
+        req_params=None,
+        force_update=False,
     ) -> list[Bookmark]:
         # Always start at the first page of bookmarks
-        req_params = {
+        default_params = {
             "sort_column": "created_at",
             "user_id": self._username,
             "page": 1,
         }
-        if override_req_params:
-            req_params.update(override_req_params)
+        if req_params is None:
+            req_params = default_params
+        else:
+            req_params = {**default_params, **req_params}
 
-        last_tracked_bookmark = self._get_last_tracked(AO3.SYNC_TYPES.BOOKMARKS)
+        last_tracked_bookmark = self._get_last_tracked(AO3.SYNC_TYPES.BOOKMARKS) if not force_update else None
 
         bookmark_list = []
         get_next_page = True
         while get_next_page is True:
-            bookmarks_page = self._download_page(AO3.SYNC_TYPES.BOOKMARKS, cache=cache, req_params=req_params)
+            bookmarks_url = self._get_download_url(AO3.SYNC_TYPES.BOOKMARKS)
+            bookmarks_page = self._download_page(
+                bookmarks_url,
+                req_params=req_params,
+                cache_category=AO3.CACHE_CATEGORIES.BOOKMARKS,
+                cache_id=req_params["page"],
+            )
             bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 
             for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
@@ -167,7 +218,7 @@ class AO3:
 
                 if bookmark_id == last_tracked_bookmark:
                     get_next_page = False
-                    debug_print(f"Skipping bookmark {idx} as it is cached")
+                    debug_print(f"Stopping at bookmark {idx} as it is already cached")
                     break
 
                 title_raw = bookmark_el.css("h4.heading a:not(rel)")
@@ -198,7 +249,7 @@ class AO3:
                     id=bookmark_id,
                     object=obj,
                 )
-                bookmark_list.append(bookmark)
+                bookmark_list.insert(0, bookmark)
                 # debug_print(
                 #     f"Bookmark Item: {bookmark.id} {bookmark.object.title} {bookmark.object.type}  {bookmark.object.url}"
                 # )
