@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ROOT_DIR: Path = ROOT_DIR
     ENV_PATH: Path = ENV_PATH
     ENV_PREFIX: str = ENV_PREFIX
+
     DEBUG: bool = False
     HOST: str = "https://archiveofourown.org"
 

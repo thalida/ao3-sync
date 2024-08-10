@@ -23,11 +23,13 @@ class AO3Api:
 
     DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
 
-    def __init__(self, session: AO3Session):
+    def __init__(self, session: AO3Session, force=False, dry_run=False):
         self._session = session
         self._download_paths = {
             AO3Api.SYNC_TYPES.BOOKMARKS: "/bookmarks",
         }
+        self._force = force
+        self._dry_run = dry_run
 
     @classmethod
     def get_sync_types_values(cls):
@@ -106,12 +108,12 @@ class AO3Api:
         with open(f"downloads/{filename}", "wb") as f:
             f.write(r.content)
 
-    def sync_bookmarks(self, paginate=True, query_params=None, force=False):
+    def sync_bookmarks(self, query_params=None, paginate=True):
         """
         Sync bookmarks from AO3
         using the cache file, find out what bookmarks are missing and download them
         """
-        bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params, force=force)
+        bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params)
         # bookmarks are already sorted from oldest to newest, so no need to reverse
         for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
@@ -140,7 +142,6 @@ class AO3Api:
         self,
         paginate=True,
         query_params=None,
-        force=False,
     ) -> list[Bookmark]:
         # Always start at the first page of bookmarks
         default_params = {
@@ -153,7 +154,7 @@ class AO3Api:
         else:
             query_params = {**default_params, **query_params}
 
-        last_tracked_bookmark = self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not force else None
+        last_tracked_bookmark = self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not self._force else None
 
         bookmark_list = []
         get_next_page = True

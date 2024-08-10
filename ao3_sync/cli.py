@@ -14,6 +14,13 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 def shared_options(func):
     @click.pass_context
     @click.option(
+        "--debug",
+        is_flag=True,
+        flag_value=True,
+        default=False,
+        help="Enable Debug Mode",
+    )
+    @click.option(
         "-u",
         "--username",
         "username",
@@ -29,7 +36,13 @@ def shared_options(func):
         default=lambda: session.password.get_secret_value() if session.password else None,
     )
     @functools.wraps(func)
-    def wrapper(ctx, username, password, *args, **kwargs):
+    def wrapper(ctx, debug, username, password, *args, **kwargs):
+        if debug:
+            settings.DEBUG = True
+
+        if settings.DEBUG:
+            click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
+
         if username is None or len(username) == 0:
             username = click.prompt("Enter your AO3 username", type=str)
 
@@ -55,18 +68,16 @@ def cli(ctx):
 @click.option("--page", "page", type=int, default=1, help="Page number")
 @click.option("--paginate/--no-paginate", "paginate", default=True, help="Should we paginate?")
 @click.option("-f", "--force", "force", is_flag=True, default=False, help="Force update")
-def bookmarks(ctx, page, **kwargs):
+@click.option("--dry-run", "dry_run", is_flag=True, default=False, help="Dry Run")
+def bookmarks(ctx, page, paginate, **kwargs):
     """
     Sync AO3 Bookmarks
     """
     click.secho(f"Syncing AO3 Bookmarks for {session.username}...", bg="blue", fg="black", bold=True, color=True)
 
-    if settings.DEBUG:
-        click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
-
     try:
-        api = AO3Api(session)
-        api.sync_bookmarks(query_params={"page": page}, **kwargs)
+        api = AO3Api(session, **kwargs)
+        api.sync_bookmarks(query_params={"page": page}, paginate=paginate)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except ao3_sync.exceptions.LoginError as e:
         click.echo(f"Error logging into AO3 for {session.username}")

@@ -1,13 +1,7 @@
-import os
-
-from dotenv import load_dotenv
 from rich import print
-
-load_dotenv(override=True)
-
-DEBUG = os.getenv("AO3_DEBUG", False)
+from ao3_sync import settings
 
 
 def debug_print(*args, **kwargs):
-    if DEBUG:
+    if settings.DEBUG:
         print(*args, **kwargs)
