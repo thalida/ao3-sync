@@ -130,7 +130,7 @@ class AO3:
         Sync bookmarks from AO3
         using the cache file, find out what bookmarks are missing and download them
         """
-        bookmarks = self.get_bookmarks(paginate=paginate, custom_req_params=req_params, cache=cache)
+        bookmarks = self.get_bookmarks(paginate=paginate, override_req_params=req_params, cache=cache)
         for bookmark in bookmarks:
             debug_print(bookmark)
 
@@ -139,7 +139,7 @@ class AO3:
     def get_bookmarks(
         self,
         paginate=True,
-        custom_req_params=None,
+        override_req_params=None,
         cache=False,
     ) -> list[Bookmark]:
         # Always start at the first page of bookmarks
@@ -148,8 +148,8 @@ class AO3:
             "user_id": self._username,
             "page": 1,
         }
-        if custom_req_params:
-            req_params.update(custom_req_params)
+        if override_req_params:
+            req_params.update(override_req_params)
 
         last_tracked_bookmark = self._get_last_tracked(AO3.SYNC_TYPES.BOOKMARKS)
 
