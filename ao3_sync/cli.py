@@ -9,6 +9,8 @@ from ao3_sync.ao3 import AO3
 load_dotenv(override=True)
 
 DEBUG = os.getenv("AO3_DEBUG", False)
+if isinstance(DEBUG, str):
+    DEBUG = DEBUG.lower() in ("true", "1")
 
 
 @click.command()
@@ -20,7 +22,9 @@ DEBUG = os.getenv("AO3_DEBUG", False)
 @click.option("-u", "--username", "username", help="AO3 Username", envvar="AO3_USERNAME", required=True)
 @click.option("-p", "--password", "password", help="AO3 Password", envvar="AO3_PASSWORD", required=True)
 @click.option("--dry-run", "dryrun", is_flag=True, default=False)
-def main(sync_type, username, password, dryrun):
+@click.option("--paginate/--no-paginate", "paginate", default=True)
+@click.option("--page", "page", type=int, default=1)
+def main(sync_type, username, password, dryrun, paginate, page):
     click.secho(f"Syncing AO3 {sync_type} for {username}...", bg="blue", fg="black", bold=True, color=True)
 
     if DEBUG:
@@ -35,7 +39,8 @@ def main(sync_type, username, password, dryrun):
         if dryrun:
             click.secho(f"[SKIPPED] AO3 fetch {sync_type}", color=True)
         elif sync_type == AO3.SYNC_TYPES.BOOKMARKS:
-            instance.get_bookmarks()
+            req_params = {"page": page}
+            instance.sync_bookmarks(paginate=paginate, req_params=req_params)
 
         click.secho("DONE!", bold=True, fg="green", color=True)
     except ao3_sync.exceptions.LoginError as e:
