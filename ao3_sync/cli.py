@@ -1,56 +1,71 @@
-import os
-
+from pydantic import SecretStr
 import rich_click as click
-from dotenv import load_dotenv
-
+from ao3_sync import settings
+from ao3_sync.api import AO3Api
+from ao3_sync.session import AO3Session
 import ao3_sync.exceptions
-from ao3_sync.ao3 import AO3
 
-load_dotenv(override=True)
+session = AO3Session()
 
-DEBUG = os.getenv("AO3_DEBUG", False)
-if isinstance(DEBUG, str):
-    DEBUG = DEBUG.lower() in ("true", "1")
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
-@click.command()
-@click.argument(
-    "sync_type",
-    type=click.Choice(AO3.get_sync_types_values(), case_sensitive=False),
-    default=AO3.get_default_sync_type(),
+@click.group(context_settings=CONTEXT_SETTINGS)
+@click.pass_context
+@click.option(
+    "-u",
+    "--username",
+    "username",
+    help="AO3 Username",
+    required=True,
+    default=lambda: session.username,
 )
-@click.option("-u", "--username", "username", help="AO3 Username", envvar="AO3_USERNAME", required=True)
-@click.option("-p", "--password", "password", help="AO3 Password", envvar="AO3_PASSWORD", required=True)
-@click.option("--dry-run", "dryrun", is_flag=True, default=False)
+@click.option(
+    "-p",
+    "--password",
+    "password",
+    help="AO3 Password",
+    required=True,
+    hide_input=True,
+    default=lambda: session.password.get_secret_value() if session.password else None,
+    show_default=False,
+)
+def cli(ctx, username, password):
+    ctx.ensure_object(dict)
+
+    if username is None or len(username) == 0:
+        username = click.prompt("Enter your AO3 username", type=str)
+
+    if password is None or len(password) == 0:
+        password = click.prompt("Enter your AO3 password", type=str, hide_input=True)
+
+    session.username = username
+    session.password = SecretStr(password)
+
+
+@cli.command()
+@click.pass_context
 @click.option("-f", "--force", "force", is_flag=True, default=False)
 @click.option("--paginate/--no-paginate", "paginate", default=True)
 @click.option("--page", "page", type=int, default=1)
-def main(sync_type, username, password, force, dryrun, paginate, page):
-    click.secho(f"Syncing AO3 {sync_type} for {username}...", bg="blue", fg="black", bold=True, color=True)
+def bookmarks(ctx, force, paginate, page):
+    click.secho(f"Syncing AO3 Bookmarks for {session.username}...", bg="blue", fg="black", bold=True, color=True)
 
-    if DEBUG:
+    if settings.DEBUG:
         click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
 
-    if dryrun:
-        click.secho("DRY RUN: ON", bold=True, fg="yellow", color=True)
-
     try:
-        instance = AO3(username, password)
-
-        if dryrun:
-            click.secho(f"[SKIPPED] AO3 fetch {sync_type}", color=True)
-        elif sync_type == AO3.SYNC_TYPES.BOOKMARKS:
-            req_params = {"page": page}
-            instance.sync_bookmarks(paginate=paginate, req_params=req_params, force_update=force)
-
+        api = AO3Api(session)
+        req_params = {"page": page}
+        api.sync_bookmarks(paginate=paginate, req_params=req_params, force_update=force)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except ao3_sync.exceptions.LoginError as e:
-        click.echo(f"Error logging into AO3 with username: {username}")
-        if DEBUG:
+        click.echo(f"Error logging into AO3 for {session.username}")
+        if settings.DEBUG:
             print(e)
             raise
     except Exception as e:
         click.echo("Unexpected Error")
-        if DEBUG:
+        if settings.DEBUG:
             print(e)
             raise e

@@ -17,13 +17,14 @@ rich-click = "^1.8.3"
 pydantic = "^2.8.2"
 loguru = "^0.7.2"
 requests-ratelimiter = "^0.7.0"
+pydantic-settings = "^2.4.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.7"
 pre-commit = "^3.8.0"
 
 [tool.poetry.scripts]
-ao3-sync = "ao3_sync.cli:main"
+ao3-sync = "ao3_sync.cli:cli"
 
 [build-system]
 requires = ["poetry-core"]

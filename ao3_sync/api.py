@@ -2,22 +2,16 @@ import os
 from urllib.parse import urlparse
 
 import parsel
-from dotenv import load_dotenv
 from loguru import logger
-from requests_ratelimiter import LimiterSession
 
 import ao3_sync.exceptions
+from ao3_sync import settings
 from ao3_sync.models import Bookmark, ObjectTypes, Series, Work
+from ao3_sync.session import AO3Session
 from ao3_sync.utils import debug_print
 
-load_dotenv(override=True)
 
-DEBUG = os.getenv("AO3_DEBUG", False)
-if isinstance(DEBUG, str):
-    DEBUG = DEBUG.lower() in ("true", "1")
-
-
-class AO3:
+class AO3Api:
     class CACHE_CATEGORIES:
         BOOKMARKS = "bookmarks"
         WORKS = "works"
@@ -29,16 +23,10 @@ class AO3:
 
     DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
 
-    def __init__(self, username, password):
-        self._session = LimiterSession(per_second=0.5)
-        self._session.headers.update(
-            {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
-        )
-        self._username = username
-        self._password = password
-        self._logged_in = False
+    def __init__(self, session: AO3Session):
+        self._session = session
         self._download_urls = {
-            AO3.SYNC_TYPES.BOOKMARKS: "https://archiveofourown.org/bookmarks",
+            AO3Api.SYNC_TYPES.BOOKMARKS: "https://archiveofourown.org/bookmarks",
         }
 
     @classmethod
@@ -93,16 +81,15 @@ class AO3:
     ):
         downloaded_page = None
 
-        if DEBUG:
+        if settings.DEBUG:
             downloaded_page = self._get_cached_file(cache_category, cache_id=cache_id)
 
         if not downloaded_page:
-            self._login()
             logger.debug(f"Downloading page {url} with params {req_params}")
             res = self._session.get(url, params=req_params)
             downloaded_page = res.text
 
-            if DEBUG:
+            if settings.DEBUG:
                 print("Saving file to cache...")
                 self._save_cached_file(cache_category, downloaded_page, cache_id=cache_id)
 
@@ -120,31 +107,6 @@ class AO3:
         with open(f"downloads/{filename}", "wb") as f:
             f.write(r.content)
 
-    def _login(self):
-        if self._logged_in:
-            return
-
-        logger.debug(f"Logging into AO3 with username: {self._username}")
-        login_page = self._session.get("https://archiveofourown.org/users/login")
-        authenticity_token = (
-            parsel.Selector(login_page.text).css("input[name='authenticity_token']::attr(value)").get()
-        )
-        payload = {
-            "user[login]": self._username,
-            "user[password]": self._password,
-            "authenticity_token": authenticity_token,
-        }
-        # The session in this instance is now logged in
-        login_res = self._session.post(
-            "https://archiveofourown.org/users/login",
-            params=payload,
-            allow_redirects=False,
-        )
-        if "auth_error" in login_res.text:
-            raise ao3_sync.exceptions.LoginError("Error logging into AO3")
-
-        self._logged_in = True
-
     def sync_bookmarks(self, paginate=True, req_params=None, force_update=False):
         """
         Sync bookmarks from AO3
@@ -155,13 +117,13 @@ class AO3:
         for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
                 debug_print("Skipping series bookmark", bookmark.object.title)
-                self._update_last_tracked(AO3.SYNC_TYPES.BOOKMARKS, bookmark.id)
+                self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
                 continue
 
             work = bookmark.object
             work_page = self._download_page(
                 work.url,
-                cache_category=AO3.CACHE_CATEGORIES.WORKS,
+                cache_category=AO3Api.CACHE_CATEGORIES.WORKS,
                 cache_id=work.id,
             )
             download_links = (
@@ -174,7 +136,7 @@ class AO3:
                     logger.error(f"Error downloading work: {work.title} {link_path}")
                     logger.error(e)
 
-            self._update_last_tracked(AO3.SYNC_TYPES.BOOKMARKS, bookmark.id)
+            self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
             debug_print("Downloaded work:", work.title)
 
         debug_print("Count of bookmarks:", len(bookmarks))
@@ -188,7 +150,7 @@ class AO3:
         # Always start at the first page of bookmarks
         default_params = {
             "sort_column": "created_at",
-            "user_id": self._username,
+            "user_id": self._session.username,
             "page": 1,
         }
         if req_params is None:
@@ -196,16 +158,16 @@ class AO3:
         else:
             req_params = {**default_params, **req_params}
 
-        last_tracked_bookmark = self._get_last_tracked(AO3.SYNC_TYPES.BOOKMARKS) if not force_update else None
+        last_tracked_bookmark = self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not force_update else None
 
         bookmark_list = []
         get_next_page = True
         while get_next_page is True:
-            bookmarks_url = self._get_download_url(AO3.SYNC_TYPES.BOOKMARKS)
+            bookmarks_url = self._get_download_url(AO3Api.SYNC_TYPES.BOOKMARKS)
             bookmarks_page = self._download_page(
                 bookmarks_url,
                 req_params=req_params,
-                cache_category=AO3.CACHE_CATEGORIES.BOOKMARKS,
+                cache_category=AO3Api.CACHE_CATEGORIES.BOOKMARKS,
                 cache_id=req_params["page"],
             )
             bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
