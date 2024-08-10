@@ -75,7 +75,7 @@ class AO3Api:
     def _download_page(
         self,
         url,
-        req_params=None,
+        query_params=None,
         cache_category=None,
         cache_id=None,
     ):
@@ -85,8 +85,8 @@ class AO3Api:
             downloaded_page = self._get_cached_file(cache_category, cache_id=cache_id)
 
         if not downloaded_page:
-            logger.debug(f"Downloading page {url} with params {req_params}")
-            res = self._session.get(url, params=req_params)
+            logger.debug(f"Downloading page {url} with params {query_params}")
+            res = self._session.get(url, params=query_params)
             downloaded_page = res.text
 
             if settings.DEBUG:
@@ -107,12 +107,12 @@ class AO3Api:
         with open(f"downloads/{filename}", "wb") as f:
             f.write(r.content)
 
-    def sync_bookmarks(self, paginate=True, req_params=None, force_update=False):
+    def sync_bookmarks(self, paginate=True, query_params=None, force=False):
         """
         Sync bookmarks from AO3
         using the cache file, find out what bookmarks are missing and download them
         """
-        bookmarks = self.get_bookmarks(paginate=paginate, req_params=req_params, force_update=force_update)
+        bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params, force=force)
         # bookmarks are already sorted from oldest to newest, so no need to reverse
         for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
@@ -130,11 +130,7 @@ class AO3Api:
                 parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
             )
             for link_path in download_links:
-                try:
-                    self._download_work(link_path)
-                except Exception as e:
-                    logger.error(f"Error downloading work: {work.title} {link_path}")
-                    logger.error(e)
+                self._download_work(link_path)
 
             self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
             debug_print("Downloaded work:", work.title)
@@ -144,8 +140,8 @@ class AO3Api:
     def get_bookmarks(
         self,
         paginate=True,
-        req_params=None,
-        force_update=False,
+        query_params=None,
+        force=False,
     ) -> list[Bookmark]:
         # Always start at the first page of bookmarks
         default_params = {
@@ -153,12 +149,12 @@ class AO3Api:
             "user_id": self._session.username,
             "page": 1,
         }
-        if req_params is None:
-            req_params = default_params
+        if query_params is None:
+            query_params = default_params
         else:
-            req_params = {**default_params, **req_params}
+            query_params = {**default_params, **query_params}
 
-        last_tracked_bookmark = self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not force_update else None
+        last_tracked_bookmark = self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not force else None
 
         bookmark_list = []
         get_next_page = True
@@ -166,9 +162,9 @@ class AO3Api:
             bookmarks_url = self._get_download_url(AO3Api.SYNC_TYPES.BOOKMARKS)
             bookmarks_page = self._download_page(
                 bookmarks_url,
-                req_params=req_params,
+                query_params=query_params,
                 cache_category=AO3Api.CACHE_CATEGORIES.BOOKMARKS,
-                cache_id=req_params["page"],
+                cache_id=query_params["page"],
             )
             bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 
@@ -223,6 +219,6 @@ class AO3Api:
                 if not has_next_page:
                     get_next_page = False
                     break
-                req_params["page"] += 1
+                query_params["page"] += 1
 
         return bookmark_list
