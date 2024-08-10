@@ -21,12 +21,12 @@ class AO3:
         self._username = username
         self._password = password
 
-        self._urls = {
+        self._download_urls = {
             ao3_sync.choices.SYNC_TYPES.BOOKMARKS: f"https://archiveofourown.org/users/{self._username}/bookmarks",
         }
 
-    def _get_url(self, sync_type):
-        return self._urls[sync_type]
+    def _get_download_url(self, sync_type):
+        return self._download_urls[sync_type]
 
     def _get_cache_filepath(self, sync_type):
         return f"debug_files/{sync_type}.html"
