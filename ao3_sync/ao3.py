@@ -146,7 +146,7 @@ class AO3:
         req_params = {
             "sort_column": "created_at",
             "user_id": self._username,
-            "page": 18,
+            "page": 1,
         }
         if custom_req_params:
             req_params.update(custom_req_params)
