@@ -39,11 +39,13 @@ def main(sync_type, username, password, dryrun):
             instance.get_bookmarks()
 
         click.secho("DONE!", bold=True, fg="green", color=True)
-    except ao3_sync.exceptions.LoginError:
+    except ao3_sync.exceptions.LoginError as e:
         click.echo(f"Error logging into AO3 with username: {username}")
         if DEBUG:
+            print(e)
             raise
-    except Exception:
+    except Exception as e:
         click.echo("Unexpected Error")
         if DEBUG:
-            raise
+            print(e)
+            raise e

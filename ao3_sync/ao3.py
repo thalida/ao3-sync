@@ -28,29 +28,38 @@ class AO3:
     def _get_url(self, sync_type):
         return self._urls[sync_type]
 
+    def _get_cache_filepath(self, sync_type):
+        return f"debug_files/{sync_type}.html"
+
     def _get_cached_file(self, sync_type):
-        if os.path.exists(f"debug_files/{sync_type}.html"):
-            with open(f"debug_files/{sync_type}.html", "r") as f:
+        filepath = self._get_cache_filepath(sync_type)
+        if os.path.exists(filepath):
+            with open(filepath, "r") as f:
                 return f.read()
 
     def _save_cached_file(self, sync_type, text):
-        with open(f"debug_files/{sync_type}.html", "w") as f:
+        filepath = self._get_cache_filepath(sync_type)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w") as f:
             f.write(text)
 
     def _download_page(self, sync_type, cache=False):
+        page = None
+
         if DEBUG or cache:
             page = self._get_cached_file(sync_type)
 
         if not page:
             print("Downloading page...")
             self._login()
-            page = self._session.get(self._get_url(sync_type))
+            res = self._session.get(self._get_url(sync_type))
+            page = res.text
 
             if DEBUG or cache:
-                self._save_cached_file(sync_type, page.text)
+                self._save_cached_file(sync_type, page)
 
         if not page:
-            raise ao3_sync.exceptions.FailedDownload()
+            raise ao3_sync.exceptions.FailedDownload("Failed to download page")
 
         return page
 
