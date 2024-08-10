@@ -1,12 +1,17 @@
 from loguru import logger
 import parsel
 from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from requests_ratelimiter import LimiterSession
 from ao3_sync import settings
 import ao3_sync.exceptions
+from urllib.parse import urljoin
 
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+class AO3LimiterSession(LimiterSession):
+    def request(self, method, url, *args, **kwargs):
+        ao3_url = urljoin(settings.HOST, url)
+        return super().request(method, ao3_url, *args, **kwargs)
 
 
 class AO3Session(BaseSettings):
@@ -20,7 +25,7 @@ class AO3Session(BaseSettings):
 
     def __init__(self):
         super().__init__()
-        self._requests = LimiterSession(per_second=1)
+        self._requests = AO3LimiterSession(per_second=1)
         self._requests.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
@@ -41,7 +46,7 @@ class AO3Session(BaseSettings):
             raise ao3_sync.exceptions.LoginError("Username and password must be set")
 
         logger.debug(f"Logging into AO3 with username: {self.username}")
-        login_page = self._requests.get("https://archiveofourown.org/users/login")
+        login_page = self._requests.get("/users/login")
         authenticity_token = (
             parsel.Selector(login_page.text).css("input[name='authenticity_token']::attr(value)").get()
         )
@@ -52,7 +57,7 @@ class AO3Session(BaseSettings):
         }
         # The session in this instance is now logged in
         login_res = self._requests.post(
-            "https://archiveofourown.org/users/login",
+            "/users/login",
             params=payload,
             allow_redirects=False,
         )

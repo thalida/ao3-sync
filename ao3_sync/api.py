@@ -25,8 +25,8 @@ class AO3Api:
 
     def __init__(self, session: AO3Session):
         self._session = session
-        self._download_urls = {
-            AO3Api.SYNC_TYPES.BOOKMARKS: "https://archiveofourown.org/bookmarks",
+        self._download_paths = {
+            AO3Api.SYNC_TYPES.BOOKMARKS: "/bookmarks",
         }
 
     @classmethod
@@ -39,8 +39,8 @@ class AO3Api:
     def get_default_sync_type(cls):
         return cls.DEFAULT_SYNC_TYPE
 
-    def _get_download_url(self, sync_type):
-        return self._download_urls[sync_type]
+    def _get_download_path(self, sync_type):
+        return self._download_paths[sync_type]
 
     def _get_tracking_filepath(self, sync_type):
         return f"debug_files/{sync_type}_last_id.txt"
@@ -99,10 +99,9 @@ class AO3Api:
         return downloaded_page
 
     def _download_work(self, relative_path):
-        download_link = f"https://archiveofourown.org{relative_path}"
-        link_parts = urlparse(download_link)
-        filename = os.path.basename(link_parts.path)
-        r = self._session.get(download_link, allow_redirects=True)
+        parsed_path = urlparse(relative_path)
+        filename = os.path.basename(parsed_path.path)
+        r = self._session.get(relative_path, allow_redirects=True)
         os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
         with open(f"downloads/{filename}", "wb") as f:
             f.write(r.content)
@@ -159,7 +158,7 @@ class AO3Api:
         bookmark_list = []
         get_next_page = True
         while get_next_page is True:
-            bookmarks_url = self._get_download_url(AO3Api.SYNC_TYPES.BOOKMARKS)
+            bookmarks_url = self._get_download_path(AO3Api.SYNC_TYPES.BOOKMARKS)
             bookmarks_page = self._download_page(
                 bookmarks_url,
                 query_params=query_params,

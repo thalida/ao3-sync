@@ -14,7 +14,7 @@ class Work(BaseModel):
     @computed_field
     @property
     def url(self) -> str:
-        return f"https://archiveofourown.org/{self.type}/{self.id}"
+        return f"/{self.type}/{self.id}"
 
 
 class Series(BaseModel):
@@ -25,7 +25,7 @@ class Series(BaseModel):
     @computed_field
     @property
     def url(self) -> str:
-        return f"https://archiveofourown.org/{self.type}/{self.id}"
+        return f"/{self.type}/{self.id}"
 
 
 class Bookmark(BaseModel):
