@@ -5,6 +5,8 @@ import requests
 from dotenv import load_dotenv
 
 import ao3_sync.exceptions
+from ao3_sync.models import Bookmark
+from ao3_sync.utils import debug_print
 
 load_dotenv(override=True)
 
@@ -60,6 +62,7 @@ class AO3:
         page = None
 
         if DEBUG or cache:
+            print("Getting cached file...")
             page = self._get_cached_file(sync_type)
 
         if not page:
@@ -69,6 +72,7 @@ class AO3:
             page = res.text
 
             if DEBUG or cache:
+                print("Saving file to cache...")
                 self._save_cached_file(sync_type, page)
 
         if not page:
@@ -101,4 +105,14 @@ class AO3:
         bookmarks = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 
         for idx, bookmark in enumerate(bookmarks):
-            print(f"{idx + 1}: {bookmark.css("h4.heading").xpath("string()").get().replace('\n', '').strip()}")
+            item_num = idx + 1
+
+            title = bookmark.css("h4.heading").xpath("string()").get()
+            if not title:
+                debug_print(f"Skipping bookmark {item_num} due to missing title")
+                continue
+
+            title = title.replace("\n", "").strip()
+
+            bookmark = Bookmark(title=title)
+            debug_print(bookmark)
