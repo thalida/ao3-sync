@@ -24,7 +24,8 @@ def shared_options(func):
         "--username",
         "username",
         help="AO3 Username",
-        default=lambda: session.username,
+        default=lambda: session.username if session.username else "",
+        required=True,
     )
     @click.option(
         "-p",
@@ -32,7 +33,8 @@ def shared_options(func):
         "password",
         help="AO3 Password",
         hide_input=True,
-        default=lambda: session.password.get_secret_value() if session.password else None,
+        default=lambda: session.password.get_secret_value() if session.password else "",
+        required=True,
     )
     @functools.wraps(func)
     def wrapper(ctx, debug, username, password, *args, **kwargs):
@@ -42,13 +44,23 @@ def shared_options(func):
         if settings.DEBUG:
             click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
 
+        has_username = username is not None and len(username) > 0
+        has_password = password is not None and len(password) > 0
+
+        if not has_username or not has_password:
+            click.secho("Please provide your AO3 username and password", color=True)
+            click.secho("Press Ctrl+C to cancel \n", color=True)
+
         if username is None or len(username) == 0:
             username = click.prompt("Enter your AO3 username", type=str)
+        else:
+            click.secho(f"AO3 username: {username}", color=True)
 
         if password is None or len(password) == 0:
             password = click.prompt("Enter your AO3 password", type=str, hide_input=True)
 
         session.set_auth(username, password)
+        session.login()
         return func(ctx, *args, **kwargs)
 
     return wrapper
@@ -71,7 +83,6 @@ def bookmarks(ctx, page, paginate, **kwargs):
     Sync AO3 Bookmarks
     """
     click.secho(f"Syncing AO3 Bookmarks for {session.username}...", bg="blue", fg="black", bold=True, color=True)
-
     try:
         api = AO3Api(session, **kwargs)
         api.sync_bookmarks(query_params={"page": page}, paginate=paginate)
