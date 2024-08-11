@@ -178,8 +178,21 @@ def cli(ctx):
     """,
 )
 @shared_options
-@click.option("--page", "page", type=int, default=1, help="Page number")
-@click.option("--paginate/--no-paginate", "paginate", default=True, help="Should we paginate?")
+@click.option(
+    "--page",
+    "page",
+    type=int,
+    default=1,
+    help="Page number",
+    show_default=True,
+)
+@click.option(
+    "--paginate/--no-paginate",
+    "paginate",
+    default=True,
+    help="Enable/Disable automatic pagination",
+    show_default=True,
+)
 def bookmarks(ctx, **kwargs):
     """
     Sync AO3 Bookmarks
