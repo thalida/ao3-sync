@@ -2,13 +2,12 @@ import os
 from urllib.parse import urlparse
 
 import parsel
-from loguru import logger
 
 import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.models import Bookmark, ObjectTypes, Series, Work
 from ao3_sync.session import AO3Session
-from ao3_sync.utils import debug_log
+from ao3_sync.utils import debug_error, debug_log, dryrun_log
 
 
 class AO3Api:
@@ -23,13 +22,14 @@ class AO3Api:
 
     DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
 
-    def __init__(self, session: AO3Session, force=False, dry_run=False):
-        self._session = session
-        self._download_paths = {
-            AO3Api.SYNC_TYPES.BOOKMARKS: "/bookmarks",
-        }
-        self._force = force
-        self._dry_run = dry_run
+    DOWNLOAD_PATHS = {
+        SYNC_TYPES.BOOKMARKS: "/bookmarks",
+    }
+
+    session: AO3Session
+
+    def __init__(self, session: AO3Session):
+        self.session = session
 
     @classmethod
     def get_sync_types_values(cls):
@@ -42,7 +42,7 @@ class AO3Api:
         return cls.DEFAULT_SYNC_TYPE
 
     def _get_download_path(self, sync_type):
-        return self._download_paths[sync_type]
+        return self.DOWNLOAD_PATHS[sync_type]
 
     def _get_tracking_filepath(self, sync_type):
         return f"debug_files/{sync_type}_last_id.txt"
@@ -52,7 +52,7 @@ class AO3Api:
 
     def _get_cached_file(self, cache_category, cache_id=None):
         filepath = self._get_cache_filepath(cache_category, cache_id=cache_id)
-        print(f"Getting cached file: {filepath}")
+        debug_log(f"Getting cached file: {filepath}")
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 return f.read()
@@ -87,12 +87,12 @@ class AO3Api:
             downloaded_page = self._get_cached_file(cache_category, cache_id=cache_id)
 
         if not downloaded_page:
-            logger.debug(f"Downloading page {url} with params {query_params}")
-            res = self._session.get(url, params=query_params)
+            debug_log(f"Downloading page {url} with params {query_params}")
+            res = self.session.get(url, params=query_params)
             downloaded_page = res.text
 
             if settings.DEBUG:
-                print("Saving file to cache...")
+                debug_log("Saving file to cache...")
                 self._save_cached_file(cache_category, downloaded_page, cache_id=cache_id)
 
         if not downloaded_page:
@@ -103,7 +103,7 @@ class AO3Api:
     def _download_work(self, relative_path):
         parsed_path = urlparse(relative_path)
         filename = os.path.basename(parsed_path.path)
-        r = self._session.get(relative_path, allow_redirects=True)
+        r = self.session.get(relative_path, allow_redirects=True)
         os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
         with open(f"downloads/{filename}", "wb") as f:
             f.write(r.content)
@@ -114,6 +114,8 @@ class AO3Api:
         using the cache file, find out what bookmarks are missing and download them
         """
         bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params)
+        debug_log(f"Found {len(bookmarks)} bookmarks to download")
+
         # bookmarks are already sorted from oldest to newest, so no need to reverse
         for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
@@ -136,8 +138,6 @@ class AO3Api:
             self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
             debug_log("Downloaded work:", work.title)
 
-        debug_log("Count of bookmarks:", len(bookmarks))
-
     def get_bookmarks(
         self,
         paginate=True,
@@ -146,7 +146,7 @@ class AO3Api:
         # Always start at the first page of bookmarks
         default_params = {
             "sort_column": "created_at",
-            "user_id": self._session.username,
+            "user_id": self.session.username,
             "page": 1,
         }
         if query_params is None:
@@ -154,7 +154,15 @@ class AO3Api:
         else:
             query_params = {**default_params, **query_params}
 
-        last_tracked_bookmark = self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not self._force else None
+        last_tracked_bookmark = (
+            self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not settings.FORCE_UPDATE else None
+        )
+
+        if settings.DRY_RUN:
+            dryrun_log(
+                f"Getting bookmarks with params: {query_params} stopping at from bookmark: {last_tracked_bookmark}"
+            )
+            return []
 
         bookmark_list = []
         get_next_page = True
@@ -171,7 +179,7 @@ class AO3Api:
             for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
                 bookmark_id = bookmark_el.css("::attr(id)").get()
                 if not bookmark_id:
-                    logger.error(f"Skipping bookmark {idx} as it has no ID")
+                    debug_error(f"Skipping bookmark {idx} as it has no ID")
                     continue
 
                 if bookmark_id == last_tracked_bookmark:
@@ -184,7 +192,7 @@ class AO3Api:
                 object_href = title_raw.css("::attr(href)").get()
 
                 if not object_href:
-                    logger.error(f"Skipping bookmark {idx} as it has no object_href")
+                    debug_error(f"Skipping bookmark {idx} as it has no object_href")
                     continue
 
                 _, object_type, object_id = object_href.split("/")
@@ -200,7 +208,7 @@ class AO3Api:
                         title=object_title,
                     )
                 else:
-                    logger.error(f"Skipping bookmark {idx} as it has an unknown object_type: {object_type}")
+                    debug_error(f"Skipping bookmark {idx} as it has an unknown object_type: {object_type}")
                     continue
 
                 bookmark = Bookmark(
@@ -208,9 +216,6 @@ class AO3Api:
                     object=obj,
                 )
                 bookmark_list.insert(0, bookmark)
-                # debug_log(
-                #     f"Bookmark Item: {bookmark.id} {bookmark.object.title} {bookmark.object.type}  {bookmark.object.url}"
-                # )
 
             if paginate is False:
                 get_next_page = False

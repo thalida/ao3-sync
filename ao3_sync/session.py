@@ -6,7 +6,7 @@ from ao3_sync import settings
 import ao3_sync.exceptions
 from urllib.parse import urljoin
 
-from ao3_sync.utils import debug_log
+from ao3_sync.utils import debug_log, dryrun_log
 
 
 class AO3LimiterSession(LimiterSession):
@@ -59,6 +59,11 @@ class AO3Session(BaseSettings):
 
         if not self.username or not self.password:
             raise ao3_sync.exceptions.LoginError("Username and password must be set")
+
+        if settings.DRY_RUN:
+            dryrun_log("Faking login")
+            self.is_logged_in = True
+            return
 
         login_page = self._requests.get("/users/login")
         authenticity_token = (

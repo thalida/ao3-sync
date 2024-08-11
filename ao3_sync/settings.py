@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     ENV_PREFIX: str = ENV_PREFIX
 
     DEBUG: bool = False
+    DRY_RUN: bool = False
+    FORCE_UPDATE: bool = False
+
     HOST: str = "https://archiveofourown.org"
 
 

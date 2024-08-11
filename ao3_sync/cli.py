@@ -39,22 +39,54 @@ def shared_options(func):
         default=False,
         help="Enable Debug Mode",
     )
-    @click.option("-f", "--force", "force", is_flag=True, default=False, help="Force update")
-    @click.option("--dry-run", "dry_run", is_flag=True, default=False, help="Dry Run")
+    @click.option(
+        "-f",
+        "--force",
+        "force",
+        is_flag=True,
+        flag_value=True,
+        default=False,
+        help="Force update",
+    )
+    @click.option(
+        "--dry-run",
+        "dry_run",
+        is_flag=True,
+        flag_value=True,
+        default=False,
+        help="Dry Run",
+    )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
         debug = kwargs.get("debug", False)
+        dry_run = kwargs.get("dry_run", False)
+        force_update = kwargs.get("force", False)
+
         username = kwargs.get("username")
         password = kwargs.get("password")
 
         if debug:
             settings.DEBUG = True
 
+        if dry_run:
+            settings.DRY_RUN = True
+
+        if force_update:
+            settings.FORCE_UPDATE = True
+
         click.secho("AO3 Sync", bold=True, color=True)
         click.secho("Press Ctrl+C to cancel \n", color=True)
 
         if settings.DEBUG:
-            click.secho("DEBUG MODE: ON\n", bold=True, fg="red", color=True)
+            click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
+
+        if settings.DRY_RUN:
+            click.secho("DRY RUN MODE: ON", bold=True, fg="yellow", color=True)
+
+        if settings.FORCE_UPDATE:
+            click.secho("FORCE UPDATE MODE: ON", bold=True, fg="blue", color=True)
+
+        click.echo()
 
         has_username = username is not None and len(username) > 0
         has_password = password is not None and len(password) > 0
@@ -77,7 +109,7 @@ def shared_options(func):
         try:
             session.set_auth(username, password)
             session.login()
-            click.secho("Logged in!", fg="green", color=True)
+            click.secho("Successfully logged in!\n", fg="green", color=True, bold=True)
         except ao3_sync.exceptions.LoginError as e:
             click.secho(e.args[0], fg="red", color=True, bold=True)
             debug_log(e)
@@ -109,28 +141,22 @@ def bookmarks(ctx, **kwargs):
     """
     Sync AO3 Bookmarks
     """
-    click.secho(f"Syncing AO3 Bookmarks for {session.username}...", bg="blue", fg="black", bold=True, color=True)
+    click.secho("Syncing AO3 Bookmarks...", bold=True, color=True)
     page: int = kwargs.get("page", 1)
     paginate: bool = kwargs.get("paginate", True)
 
     try:
-        api = AO3Api(
-            session,
-            dry_run=kwargs.get("dry_run", False),
-            force=kwargs.get("force", False),
-        )
+        api = AO3Api(session)
         api.sync_bookmarks(query_params={"page": page}, paginate=paginate)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except ao3_sync.exceptions.LoginError as e:
-        click.echo(f"Error logging into AO3 for {session.username}")
-        if settings.DEBUG:
-            print(e)
-            raise
+        click.secho(e.args[0], fg="red", color=True, bold=True)
+        debug_log(e)
+        return
     except Exception as e:
-        click.echo("Unexpected Error")
-        if settings.DEBUG:
-            print(e)
-            raise e
+        click.secho("Unexpected Error", fg="red", color=True, bold=True)
+        debug_log(e)
+        return
 
 
 if __name__ == "__main__":
