@@ -1,5 +1,4 @@
 import functools
-from pydantic import SecretStr
 import rich_click as click
 from ao3_sync import settings
 from ao3_sync.api import AO3Api
@@ -49,9 +48,7 @@ def shared_options(func):
         if password is None or len(password) == 0:
             password = click.prompt("Enter your AO3 password", type=str, hide_input=True)
 
-        session.username = username
-        session.password = SecretStr(password)
-
+        session.set_auth(username, password)
         return func(ctx, *args, **kwargs)
 
     return wrapper
@@ -89,3 +86,7 @@ def bookmarks(ctx, page, paginate, **kwargs):
         if settings.DEBUG:
             print(e)
             raise e
+
+
+if __name__ == "__main__":
+    cli()

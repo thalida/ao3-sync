@@ -15,7 +15,12 @@ class AO3LimiterSession(LimiterSession):
 
 
 class AO3Session(BaseSettings):
-    model_config = SettingsConfigDict(env_file=settings.ENV_PATH, env_prefix="AO3_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=settings.ENV_PATH,
+        env_prefix="AO3_",
+        extra="ignore",
+        env_ignore_empty=True,
+    )
     username: str | None = None
     password: SecretStr | None = None
 
@@ -29,6 +34,11 @@ class AO3Session(BaseSettings):
         self._requests.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
+
+    def set_auth(self, username: str, password: str):
+        self.username = username
+        self.password = SecretStr(password)
+        self.is_logged_in = False
 
     def get(
         self,
