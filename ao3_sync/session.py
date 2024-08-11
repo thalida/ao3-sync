@@ -1,4 +1,3 @@
-from loguru import logger
 import parsel
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -6,6 +5,8 @@ from requests_ratelimiter import LimiterSession
 from ao3_sync import settings
 import ao3_sync.exceptions
 from urllib.parse import urljoin
+
+from ao3_sync.utils import debug_log
 
 
 class AO3LimiterSession(LimiterSession):
@@ -36,6 +37,7 @@ class AO3Session(BaseSettings):
         )
 
     def set_auth(self, username: str, password: str):
+        debug_log(f"Updating AO3Session with username: {username} and password: {password}")
         self.username = username
         self.password = SecretStr(password)
         self.is_logged_in = False
@@ -49,13 +51,15 @@ class AO3Session(BaseSettings):
         return self._requests.get(*args, **kwargs)
 
     def login(self):
+        debug_log(f"Logging into AO3 with username: {self.username}")
+
         if self.is_logged_in:
+            debug_log("Already logged in")
             return
 
         if not self.username or not self.password:
             raise ao3_sync.exceptions.LoginError("Username and password must be set")
 
-        logger.debug(f"Logging into AO3 with username: {self.username}")
         login_page = self._requests.get("/users/login")
         authenticity_token = (
             parsel.Selector(login_page.text).css("input[name='authenticity_token']::attr(value)").get()
@@ -71,7 +75,11 @@ class AO3Session(BaseSettings):
             params=payload,
             allow_redirects=False,
         )
+
         if "auth_error" in login_res.text:
-            raise ao3_sync.exceptions.LoginError("Error logging into AO3")
+            raise ao3_sync.exceptions.LoginError(
+                f"Error logging into AO3 with username {self.username} and password {self.password}"
+            )
 
         self.is_logged_in = True
+        debug_log("Logged in")

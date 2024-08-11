@@ -8,7 +8,7 @@ import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.models import Bookmark, ObjectTypes, Series, Work
 from ao3_sync.session import AO3Session
-from ao3_sync.utils import debug_print
+from ao3_sync.utils import debug_log
 
 
 class AO3Api:
@@ -117,7 +117,7 @@ class AO3Api:
         # bookmarks are already sorted from oldest to newest, so no need to reverse
         for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
-                debug_print("Skipping series bookmark", bookmark.object.title)
+                debug_log("Skipping series bookmark", bookmark.object.title)
                 self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
                 continue
 
@@ -134,9 +134,9 @@ class AO3Api:
                 self._download_work(link_path)
 
             self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
-            debug_print("Downloaded work:", work.title)
+            debug_log("Downloaded work:", work.title)
 
-        debug_print("Count of bookmarks:", len(bookmarks))
+        debug_log("Count of bookmarks:", len(bookmarks))
 
     def get_bookmarks(
         self,
@@ -176,7 +176,7 @@ class AO3Api:
 
                 if bookmark_id == last_tracked_bookmark:
                     get_next_page = False
-                    debug_print(f"Stopping at bookmark {idx} as it is already cached")
+                    debug_log(f"Stopping at bookmark {idx} as it is already cached")
                     break
 
                 title_raw = bookmark_el.css("h4.heading a:not(rel)")
@@ -208,7 +208,7 @@ class AO3Api:
                     object=obj,
                 )
                 bookmark_list.insert(0, bookmark)
-                # debug_print(
+                # debug_log(
                 #     f"Bookmark Item: {bookmark.id} {bookmark.object.title} {bookmark.object.type}  {bookmark.object.url}"
                 # )
 
