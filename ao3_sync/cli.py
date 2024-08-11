@@ -11,20 +11,21 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 session = AO3Session()
 
+click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.OPTION_GROUPS = {
     "ao3-sync bookmarks": [
         {
-            "name": "Authentication",
+            "name": ":lock: Authentication",
             "options": ["--username", "--password"],
             "panel_styles": {
                 "border_style": "yellow",
             },
         },
         {
-            "name": "Bookmarks Sync Options",
+            "name": "Sync Bookmarks Options",
             "options": ["--page", "--paginate"],
             "panel_styles": {
-                "border_style": "blue",
+                "border_style": "white",
             },
         },
         {
@@ -54,12 +55,14 @@ def shared_options(func):
         default=lambda: session.password.get_secret_value() if session.password else "",
         required=True,
     )
+    @click.option("--debug", is_flag=True, flag_value=True, default=False, help="Enable debug mode")
     @click.option(
-        "--debug",
+        "--dry-run",
+        "dry_run",
         is_flag=True,
         flag_value=True,
         default=False,
-        help="Enable Debug Mode",
+        help="Enable dry run mode",
     )
     @click.option(
         "-f",
@@ -68,15 +71,7 @@ def shared_options(func):
         is_flag=True,
         flag_value=True,
         default=False,
-        help="Force update",
-    )
-    @click.option(
-        "--dry-run",
-        "dry_run",
-        is_flag=True,
-        flag_value=True,
-        default=False,
-        help="Dry Run",
+        help="Enable force update",
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
@@ -160,7 +155,28 @@ def cli(ctx):
     ctx.ensure_object(dict)
 
 
-@cli.command()
+@cli.command(
+    epilog="""
+    ➤ [bold underline white]Examples[/]\n
+    [bold]Basic Usage:[/]\n
+    ao3-sync bookmarks --username your-username --password your-password \n
+    [i]Syncs all new bookmarks, by default it will paginate and stop at the last synced bookmark. See --no-paginate and --force to override this behavior.[/] \n
+    \n
+    [bold]Advanced Usage:[/]\n
+    ao3-sync bookmarks --username your-username --password your-password --force \n
+    [i]Force update all bookmarks[/] \n
+    \n
+    ao3-sync bookmarks --username your-username --password your-password --page 2 --no-paginate --force\n
+    [i]Force sync all bookmarks on page 2 only[/] \n
+    \n
+    AO3_USERNAME=your-username AO3_PASSWORD=your-password ao3-sync bookmarks \n
+    [i]Use environment variables[/] \n
+    \n
+    ➤ [bold underline white]Resources[/]\n
+    [link=https://github.com]User Guides[/] \n
+    [link=https://github.com]Developer Documentation[/] \n
+    """,
+)
 @shared_options
 @click.option("--page", "page", type=int, default=1, help="Page number")
 @click.option("--paginate/--no-paginate", "paginate", default=True, help="Should we paginate?")
