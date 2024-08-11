@@ -7,10 +7,32 @@ from ao3_sync.session import AO3Session
 import ao3_sync.exceptions
 from ao3_sync.utils import debug_log
 
-
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 session = AO3Session()
+
+click.rich_click.OPTION_GROUPS = {
+    "ao3-sync bookmarks": [
+        {
+            "name": "Authentication",
+            "options": ["--username", "--password"],
+            "panel_styles": {
+                "border_style": "yellow",
+            },
+        },
+        {
+            "name": "Bookmarks Sync Options",
+            "options": ["--page", "--paginate"],
+            "panel_styles": {
+                "border_style": "blue",
+            },
+        },
+        {
+            "name": "Advanced Options",
+            "options": ["--debug", "--dry-run", "--force"],
+        },
+    ],
+}
 
 
 def shared_options(func):
@@ -130,6 +152,11 @@ def shared_options(func):
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.pass_context
 def cli(ctx):
+    """
+    AO3 Sync
+
+    Sync your AO3 Bookmarks
+    """
     ctx.ensure_object(dict)
 
 
