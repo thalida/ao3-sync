@@ -27,11 +27,13 @@ class AO3Session(BaseSettings):
 
     is_logged_in: bool = False
 
+    NUM_REQUESTS_PER_SECOND = 1
+
     _requests: LimiterSession
 
     def __init__(self):
         super().__init__()
-        self._requests = AO3LimiterSession(per_second=1)
+        self._requests = AO3LimiterSession(per_second=self.NUM_REQUESTS_PER_SECOND)
         self._requests.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
