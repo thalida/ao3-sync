@@ -132,7 +132,7 @@ def shared_options(func):
             if is_ao3_exception:
                 click.secho(e.args[0], fg="red", color=True, bold=True)
             else:
-                click.secho("An error occurred while syncing bookmarks", fg="red", color=True, bold=True)
+                click.secho("An error occurred while logging in", fg="red", color=True, bold=True)
 
             debug_log(e)
 
