@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 import parsel
@@ -11,89 +13,93 @@ from ao3_sync.utils import debug_error, debug_log, dryrun_log
 
 
 class AO3Api:
-    class CACHE_CATEGORIES:
+    class CACHE_TYPES:
         BOOKMARKS = "bookmarks"
         WORKS = "works"
-        SERIES = "series"
-        DOWNLOADS = "downloads"
 
-    class SYNC_TYPES:
-        BOOKMARKS = "bookmarks"
-
-    DEFAULT_SYNC_TYPE = SYNC_TYPES.BOOKMARKS
-
-    DOWNLOAD_PATHS = {
-        SYNC_TYPES.BOOKMARKS: "/bookmarks",
-    }
+    OUTPUT_FOLDER = "output"
+    CACHE_FOLDER = "debug_cache"
+    DOWNLOADS_FOLDER = "downloads"
+    STATS_FILE = "stats.json"
+    BOOKMARKS_URL_PATH = "/bookmarks"
 
     session: AO3Session
 
     def __init__(self, session: AO3Session):
         self.session = session
 
-    @classmethod
-    def get_sync_types_values(cls):
-        return [
-            cls.SYNC_TYPES.BOOKMARKS,
-        ]
+    def _get_output_folder(self):
+        return Path(self.OUTPUT_FOLDER)
 
-    @classmethod
-    def get_default_sync_type(cls):
-        return cls.DEFAULT_SYNC_TYPE
+    def _get_downloads_folder(self):
+        return self._get_output_folder() / self.DOWNLOADS_FOLDER
 
-    def _get_download_path(self, sync_type):
-        return self.DOWNLOAD_PATHS[sync_type]
+    def _save_downloaded_file(self, filename, content):
+        download_folder = self._get_downloads_folder()
+        downloaded_filepath = download_folder / filename
+        os.makedirs(download_folder, exist_ok=True)
+        with open(downloaded_filepath, "wb") as f:
+            f.write(content)
 
-    def _get_tracking_filepath(self, sync_type):
-        return f"debug_files/{sync_type}_last_id.txt"
+    def _get_stats_filepath(self) -> Path:
+        return self._get_output_folder() / self.STATS_FILE
 
-    def _get_cache_filepath(self, cache_category, cache_id=None):
-        return f"debug_files/{cache_category}{f"_{cache_id}" if cache_id else ""}.html"
+    def _get_stats(
+        self,
+    ):
+        filepath = self._get_stats_filepath()
+        if os.path.exists(filepath):
+            with open(filepath, "r") as f:
+                return json.load(f)
 
-    def _get_cached_file(self, cache_category, cache_id=None):
-        filepath = self._get_cache_filepath(cache_category, cache_id=cache_id)
+    def _update_stats(self, data=None):
+        if data is None:
+            data = {}
+
+        curr_stats = self._get_stats()
+        if curr_stats:
+            data = {**curr_stats, **data}
+
+        filepath = self._get_stats_filepath()
+        with open(filepath, "w") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+    def _get_cache_filepath(self, cache_type: str, cache_filename: str) -> Path:
+        return self._get_output_folder() / self.CACHE_FOLDER / cache_type / f"{cache_filename}.html"
+
+    def _get_cached_file(self, cache_type: str, cache_filename: str):
+        filepath = self._get_cache_filepath(cache_type, cache_filename)
         debug_log(f"Getting cached file: {filepath}")
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 return f.read()
 
-    def _save_cached_file(self, cache_category, text, cache_id=None):
-        filepath = self._get_cache_filepath(cache_category, cache_id=cache_id)
+    def _save_cached_file(self, cache_type: str, cache_filename: str, data: str):
+        filepath = self._get_cache_filepath(cache_type, cache_filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w") as f:
-            f.write(text)
+            f.write(data)
 
-    def _update_last_tracked(self, sync_type, bookmark_id):
-        filepath = self._get_tracking_filepath(sync_type)
-        with open(filepath, "w") as f:
-            f.write(bookmark_id)
-
-    def _get_last_tracked(self, sync_type):
-        filepath = self._get_tracking_filepath(sync_type)
-        if os.path.exists(filepath):
-            with open(filepath, "r") as f:
-                return f.read()
-
-    def _download_page(
+    def _download_html_page(
         self,
-        url,
-        query_params=None,
-        cache_category=None,
-        cache_id=None,
+        url: str,
+        query_params: dict | None = None,
+        cache_type: str | None = None,
+        cache_filename: str | None = None,
     ):
         downloaded_page = None
 
-        if settings.DEBUG:
-            downloaded_page = self._get_cached_file(cache_category, cache_id=cache_id)
+        if settings.DEBUG and cache_type and cache_filename:
+            downloaded_page = self._get_cached_file(cache_type, cache_filename)
 
         if not downloaded_page:
             debug_log(f"Downloading page {url} with params {query_params}")
             res = self.session.get(url, params=query_params)
             downloaded_page = res.text
 
-            if settings.DEBUG:
+            if settings.DEBUG and cache_type and cache_filename:
                 debug_log("Saving file to cache...")
-                self._save_cached_file(cache_category, downloaded_page, cache_id=cache_id)
+                self._save_cached_file(cache_type, cache_filename, downloaded_page)
 
         if not downloaded_page:
             raise ao3_sync.exceptions.FailedDownload("Failed to download page")
@@ -101,12 +107,10 @@ class AO3Api:
         return downloaded_page
 
     def _download_work(self, relative_path):
+        r = self.session.get(relative_path, allow_redirects=True)
         parsed_path = urlparse(relative_path)
         filename = os.path.basename(parsed_path.path)
-        r = self.session.get(relative_path, allow_redirects=True)
-        os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
-        with open(f"downloads/{filename}", "wb") as f:
-            f.write(r.content)
+        self._save_downloaded_file(filename, r.content)
 
     def sync_bookmarks(self, query_params=None, paginate=True):
         """
@@ -120,14 +124,14 @@ class AO3Api:
         for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
                 debug_log("Skipping series bookmark", bookmark.object.title)
-                self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
+                self._update_stats({"last_tracked_bookmark": bookmark.id})
                 continue
 
             work = bookmark.object
-            work_page = self._download_page(
+            work_page = self._download_html_page(
                 work.url,
-                cache_category=AO3Api.CACHE_CATEGORIES.WORKS,
-                cache_id=work.id,
+                cache_type=AO3Api.CACHE_TYPES.WORKS,
+                cache_filename=work.id,
             )
             download_links = (
                 parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
@@ -135,7 +139,7 @@ class AO3Api:
             for link_path in download_links:
                 self._download_work(link_path)
 
-            self._update_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS, bookmark.id)
+            self._update_stats({"last_tracked_bookmark": bookmark.id})
             debug_log("Downloaded work:", work.title)
 
     def get_bookmarks(
@@ -154,25 +158,23 @@ class AO3Api:
         else:
             query_params = {**default_params, **query_params}
 
-        last_tracked_bookmark = (
-            self._get_last_tracked(AO3Api.SYNC_TYPES.BOOKMARKS) if not settings.FORCE_UPDATE else None
-        )
+        stats = self._get_stats()
+        last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
 
         if settings.DRY_RUN:
-            dryrun_log(
-                f"Getting bookmarks with params: {query_params} stopping at from bookmark: {last_tracked_bookmark}"
-            )
+            dryrun_log(f"Getting bookmarks with params: {query_params}")
+            if settings.FORCE_UPDATE:
+                dryrun_log("Forcing update of all bookmarks")
             return []
 
         bookmark_list = []
         get_next_page = True
         while get_next_page is True:
-            bookmarks_url = self._get_download_path(AO3Api.SYNC_TYPES.BOOKMARKS)
-            bookmarks_page = self._download_page(
-                bookmarks_url,
+            bookmarks_page = self._download_html_page(
+                self.BOOKMARKS_URL_PATH,
                 query_params=query_params,
-                cache_category=AO3Api.CACHE_CATEGORIES.BOOKMARKS,
-                cache_id=query_params["page"],
+                cache_type=AO3Api.CACHE_TYPES.BOOKMARKS,
+                cache_filename=f"page_{query_params['page']}",
             )
             bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 
@@ -182,7 +184,7 @@ class AO3Api:
                     debug_error(f"Skipping bookmark {idx} as it has no ID")
                     continue
 
-                if bookmark_id == last_tracked_bookmark:
+                if not settings.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
                     get_next_page = False
                     debug_log(f"Stopping at bookmark {idx} as it is already cached")
                     break

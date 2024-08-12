@@ -1,6 +1,6 @@
 # PROJECT SPECIFIC
 # ----------------
-debug_files/
+output/
 
 .ruff_cache/
 
