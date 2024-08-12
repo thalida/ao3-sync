@@ -157,7 +157,8 @@ def cli(ctx):
 
 @cli.command(
     epilog="""
-    ➤ [bold underline white]Examples[/]\n
+    [bold underline white]Examples[/]\n
+    \n
     [bold]Basic Usage:[/]\n
     ao3-sync bookmarks --username your-username --password your-password \n
     [i]Syncs all new bookmarks, by default it will paginate and stop at the last synced bookmark. See --no-paginate and --force to override this behavior.[/] \n
@@ -172,7 +173,8 @@ def cli(ctx):
     AO3_USERNAME=your-username AO3_PASSWORD=your-password ao3-sync bookmarks \n
     [i]Use environment variables[/] \n
     \n
-    ➤ [bold underline white]Resources[/]\n
+    [bold underline white]Resources[/]\n
+    \n
     [link=https://github.com]User Guides[/] \n
     [link=https://github.com]Developer Documentation[/] \n
     """,
