@@ -97,11 +97,11 @@ def shared_options(func):
         if settings.DEBUG:
             click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
 
+        if settings.FORCE_UPDATE:
+            click.secho("FORCE UPDATE MODE: ON", bold=True, fg="red", color=True)
+
         if settings.DRY_RUN:
             click.secho("DRY RUN MODE: ON", bold=True, fg="yellow", color=True)
-
-        if settings.FORCE_UPDATE:
-            click.secho("FORCE UPDATE MODE: ON", bold=True, fg="blue", color=True)
 
         click.echo()
 
@@ -127,14 +127,14 @@ def shared_options(func):
             session.set_auth(username, password)
             session.login()
             click.secho("Successfully logged in!\n", fg="green", color=True, bold=True)
-        except ao3_sync.exceptions.LoginError as e:
-            click.secho(e.args[0], fg="red", color=True, bold=True)
-            debug_log(e)
-            return
         except Exception as e:
-            click.secho("Unexpected Error", fg="red", color=True, bold=True)
+            is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
+            if is_ao3_exception:
+                click.secho(e.args[0], fg="red", color=True, bold=True)
+            else:
+                click.secho("An error occurred while syncing bookmarks", fg="red", color=True, bold=True)
+
             debug_log(e)
-            return
 
         kwargs["username"] = session.username
         kwargs["password"] = session.password.get_secret_value() if session.password else ""
@@ -199,7 +199,8 @@ def bookmarks(ctx, **kwargs):
     """
     Sync AO3 Bookmarks
     """
-    click.secho("Syncing AO3 Bookmarks...", bold=True, color=True)
+    click.secho("Syncing AO3 Bookmarks", bold=True, color=True)
+
     page: int = kwargs.get("page", 1)
     paginate: bool = kwargs.get("paginate", True)
 
@@ -207,14 +208,14 @@ def bookmarks(ctx, **kwargs):
         api = AO3Api(session)
         api.sync_bookmarks(query_params={"page": page}, paginate=paginate)
         click.secho("DONE!", bold=True, fg="green", color=True)
-    except ao3_sync.exceptions.LoginError as e:
-        click.secho(e.args[0], fg="red", color=True, bold=True)
-        debug_log(e)
-        return
     except Exception as e:
-        click.secho("Unexpected Error", fg="red", color=True, bold=True)
-        debug_log(e)
-        return
+        is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
+        if is_ao3_exception:
+            click.secho(e.args[0], fg="red", color=True, bold=True)
+            debug_log(e)
+        else:
+            click.secho("An error occurred while syncing bookmarks", fg="red", color=True, bold=True)
+            debug_log(e)
 
 
 if __name__ == "__main__":

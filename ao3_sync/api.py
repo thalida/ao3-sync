@@ -4,12 +4,13 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import parsel
+from tqdm import tqdm
 
 import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.models import Bookmark, ObjectTypes, Series, Work
 from ao3_sync.session import AO3Session
-from ao3_sync.utils import debug_error, debug_log, dryrun_log
+from ao3_sync.utils import debug_error, debug_log, dryrun_log, log
 
 
 class AO3Api:
@@ -125,10 +126,15 @@ class AO3Api:
         using the cache file, find out what bookmarks are missing and download them
         """
         bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params)
+        log(f"Found {len(bookmarks)} bookmarks to download")
         debug_log(f"Found {len(bookmarks)} bookmarks to download")
 
+        if not bookmarks or len(bookmarks) == 0:
+            log("No bookmarks to download")
+            return
+
         # bookmarks are already sorted from oldest to newest, so no need to reverse
-        for bookmark in bookmarks:
+        for bookmark in tqdm(bookmarks):
             if bookmark.object.type == ObjectTypes.SERIES:
                 debug_log("Skipping series bookmark", bookmark.object.title)
                 self._update_stats({"last_tracked_bookmark": bookmark.id})
@@ -149,6 +155,21 @@ class AO3Api:
             self._update_stats({"last_tracked_bookmark": bookmark.id})
             debug_log("Downloaded work:", work.title)
 
+    def get_num_bookmark_pages(self):
+        first_page = self._download_html_page(
+            self.BOOKMARKS_URL_PATH,
+            query_params={"page": 1, "user_id": self.session.username, "sort_column": "created_at"},
+            cache_type=AO3Api.CACHE_TYPES.BOOKMARKS,
+            cache_filename="page_1",
+        )
+        pagination = parsel.Selector(first_page).css("ol.pagination li").getall()
+
+        if len(pagination) < 3:
+            return 0
+
+        last_page_str = parsel.Selector(pagination[-2]).css("::text").get()
+        return int(last_page_str) if last_page_str else 0
+
     def get_bookmarks(
         self,
         paginate=True,
@@ -165,23 +186,44 @@ class AO3Api:
         else:
             query_params = {**default_params, **query_params}
 
+        if query_params["page"] < 1:
+            raise ao3_sync.exceptions.FailedDownload("Page number must be greater than 0")
+
         stats = self._get_stats()
         last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
 
         if settings.DRY_RUN:
-            dryrun_log(f"Getting bookmarks with params: {query_params}")
+            dryrun_log(f"Would get bookmarks with params: {query_params}")
             if settings.FORCE_UPDATE:
-                dryrun_log("Forcing update of all bookmarks")
+                dryrun_log("Would have force updated of all bookmarks")
+            dryrun_log(f"Would {'' if paginate else 'not '}have automatically paginated through bookmarks")
+            dryrun_log("Faking return with empty list of bookmarks")
             return []
 
+        log("Getting bookmarks...")
+
         bookmark_list = []
-        get_next_page = True
-        while get_next_page is True:
+
+        num_pages = self.get_num_bookmark_pages()
+
+        if num_pages == 0 or query_params["page"] > num_pages:
+            return bookmark_list
+
+        end_page = num_pages if paginate else query_params["page"]
+        num_pages_to_download = end_page - query_params["page"] + 1
+
+        if num_pages_to_download > 1:
+            log(f"Downloading {num_pages_to_download} pages, from page {query_params['page']} to {end_page}")
+        else:
+            log(f"Downloading page {query_params['page']}")
+
+        for page_num in tqdm(range(query_params["page"], end_page + 1), desc="Bookmarks Pages"):
+            local_query_params = {**query_params, "page": page_num}
             bookmarks_page = self._download_html_page(
                 self.BOOKMARKS_URL_PATH,
-                query_params=query_params,
+                query_params=local_query_params,
                 cache_type=AO3Api.CACHE_TYPES.BOOKMARKS,
-                cache_filename=f"page_{query_params['page']}",
+                cache_filename=f"page_{local_query_params['page']}",
             )
             bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
 
@@ -192,7 +234,6 @@ class AO3Api:
                     continue
 
                 if not settings.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
-                    get_next_page = False
                     debug_log(f"Stopping at bookmark {idx} as it is already cached")
                     break
 
@@ -225,14 +266,5 @@ class AO3Api:
                     object=obj,
                 )
                 bookmark_list.insert(0, bookmark)
-
-            if paginate is False:
-                get_next_page = False
-            elif get_next_page:
-                has_next_page = parsel.Selector(bookmarks_page).css("li[title=next] a").get()
-                if not has_next_page:
-                    get_next_page = False
-                    break
-                query_params["page"] += 1
 
         return bookmark_list

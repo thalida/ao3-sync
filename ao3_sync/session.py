@@ -27,7 +27,7 @@ class AO3Session(BaseSettings):
 
     is_logged_in: bool = False
 
-    NUM_REQUESTS_PER_SECOND = 1
+    NUM_REQUESTS_PER_SECOND: float | int = 1
 
     _requests: LimiterSession
 
