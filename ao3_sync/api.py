@@ -21,6 +21,7 @@ class AO3Api:
     CACHE_FOLDER = "debug_cache"
     DOWNLOADS_FOLDER = "downloads"
     STATS_FILE = "stats.json"
+
     BOOKMARKS_URL_PATH = "/bookmarks"
 
     session: AO3Session
@@ -37,6 +38,7 @@ class AO3Api:
     def _save_downloaded_file(self, filename, content):
         download_folder = self._get_downloads_folder()
         downloaded_filepath = download_folder / filename
+        debug_log(f"Saving downloaded file: {downloaded_filepath}")
         os.makedirs(download_folder, exist_ok=True)
         with open(downloaded_filepath, "wb") as f:
             f.write(content)
@@ -69,7 +71,6 @@ class AO3Api:
 
     def _get_cached_file(self, cache_type: str, cache_filename: str):
         filepath = self._get_cache_filepath(cache_type, cache_filename)
-        debug_log(f"Getting cached file: {filepath}")
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 return f.read()
@@ -98,7 +99,6 @@ class AO3Api:
             downloaded_page = res.text
 
             if settings.DEBUG and cache_type and cache_filename:
-                debug_log("Saving file to cache...")
                 self._save_cached_file(cache_type, cache_filename, downloaded_page)
 
         if not downloaded_page:
@@ -107,7 +107,14 @@ class AO3Api:
         return downloaded_page
 
     def _download_work(self, relative_path):
+        debug_log(f"Downloading work from {relative_path}")
         r = self.session.get(relative_path, allow_redirects=True)
+
+        downloaded_work = r.content
+
+        if not downloaded_work:
+            raise ao3_sync.exceptions.FailedDownload("Failed to download work")
+
         parsed_path = urlparse(relative_path)
         filename = os.path.basename(parsed_path.path)
         self._save_downloaded_file(filename, r.content)

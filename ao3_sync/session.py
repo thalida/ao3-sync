@@ -51,17 +51,14 @@ class AO3Session(BaseSettings):
         return self._requests.get(*args, **kwargs)
 
     def login(self):
-        debug_log(f"Logging into AO3 with username: {self.username}")
-
         if self.is_logged_in:
-            debug_log("Already logged in")
             return
 
         if not self.username or not self.password:
             raise ao3_sync.exceptions.LoginError("Username and password must be set")
 
         if settings.DRY_RUN:
-            dryrun_log("Faking login")
+            dryrun_log("Faking successful login")
             self.is_logged_in = True
             return
 
@@ -87,4 +84,4 @@ class AO3Session(BaseSettings):
             )
 
         self.is_logged_in = True
-        debug_log("Logged in")
+        debug_log("Successfully logged in")
