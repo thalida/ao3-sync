@@ -45,6 +45,12 @@ class AO3Api:
     session: AO3Session
 
     def __init__(self, session: AO3Session):
+        """
+        Initializes the AO3 API with a session.
+
+        Args:
+            session (AO3Session): AO3 session object
+        """
         self.session = session
 
     def _get_output_folder(self):

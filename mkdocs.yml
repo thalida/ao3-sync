@@ -12,9 +12,9 @@ nav:
       - ... | flat | examples/**/*.md
   - Reference:
       - reference/ao3-sync-cli.md
+      - reference/api.md
       - reference/settings.md
       - reference/session.md
-      - reference/api.md
       - ... | flat | reference/**/*.md
       - reference/models.md
       - reference/exceptions.md
