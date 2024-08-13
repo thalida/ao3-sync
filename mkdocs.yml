@@ -10,6 +10,15 @@ nav:
       - examples/basic-cli.md
       - examples/env-vars.md
       - ... | flat | examples/**/*.md
+  - Reference:
+      - reference/ao3-sync-cli.md
+      - reference/settings.md
+      - reference/session.md
+      - reference/api.md
+      - ... | flat | reference/**/*.md
+      - reference/models.md
+      - reference/exceptions.md
+      - reference/utils.md
   - ...
 
 theme:

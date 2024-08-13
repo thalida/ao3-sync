@@ -19,6 +19,18 @@ warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
 class AO3Api:
+    """
+    AO3 API class to interact with the Archive of Our Own website
+
+    Attributes:
+        OUTPUT_FOLDER (str): Output folder for the API. Defaults to "output"
+        CACHE_FOLDER (str): Cache folder for the API. Defaults to "debug_cache"
+        DOWNLOADS_FOLDER (str): Downloads folder for the API. Defaults to "downloads"
+        STATS_FILE (str): Stats file for the API. Defaults to "stats.json"
+        BOOKMARKS_URL_PATH (str): Bookmarks URL path for the API. Defaults to "/bookmarks"
+        session (AO3Session): AO3 session object
+    """
+
     class CACHE_TYPES:
         BOOKMARKS = "bookmarks"
         WORKS = "works"
@@ -127,8 +139,11 @@ class AO3Api:
 
     def sync_bookmarks(self, query_params=None, paginate=True):
         """
-        Sync bookmarks from AO3
-        using the cache file, find out what bookmarks are missing and download them
+        Downloads the user's bookmarks from AO3.
+
+        Args:
+            query_params (dict): Query parameters for bookmarks
+            paginate (bool): Automatically paginate through bookmarks
         """
         bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params)
         log(f"Found {len(bookmarks)} bookmarks to download")
@@ -169,6 +184,12 @@ class AO3Api:
         progress_bar.close()
 
     def get_num_bookmark_pages(self):
+        """
+        Gets the number of bookmark pages for the user.
+
+        Returns:
+            int: Number of bookmark pages
+        """
         first_page = self._download_html_page(
             self.BOOKMARKS_URL_PATH,
             query_params={"page": 1, "user_id": self.session.username, "sort_column": "created_at"},
@@ -188,6 +209,17 @@ class AO3Api:
         paginate=True,
         query_params=None,
     ) -> list[Bookmark]:
+        """
+        Gets a list of bookmarks for the user.
+
+        Args:
+            paginate (bool): Automatically paginate through bookmarks
+            query_params (dict): Query parameters for bookmarks
+
+        Returns:
+            list[Bookmark]: List of bookmarks. Ordered from oldest to newest.
+        """
+
         # Always start at the first page of bookmarks
         default_params = {
             "sort_column": "created_at",
