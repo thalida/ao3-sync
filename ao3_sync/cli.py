@@ -7,12 +7,11 @@ from yaspin import yaspin
 import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.api import AO3Api
-from ao3_sync.session import AO3Session
 from ao3_sync.utils import debug_log
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-session = AO3Session()
+api = AO3Api()
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.OPTION_GROUPS = {
@@ -46,7 +45,7 @@ def shared_options(func):
         "--username",
         "username",
         help="AO3 Username",
-        default=lambda: session.username if session.username else "",
+        default=lambda: api.username if api.username else "",
         required=True,
     )
     @click.option(
@@ -55,7 +54,7 @@ def shared_options(func):
         "password",
         help="AO3 Password",
         hide_input=True,
-        default=lambda: session.password.get_secret_value() if session.password else "",
+        default=lambda: api.password.get_secret_value() if api.password else "",
         required=True,
     )
     @click.option("--debug", is_flag=True, flag_value=True, default=False, help="Enable debug mode")
@@ -127,8 +126,8 @@ def shared_options(func):
 
         with yaspin(text="Logging into AO3\r", color="yellow") as spinner:
             try:
-                session.set_auth(username, password)
-                session.login()
+                api.set_auth(username, password)
+                api.login()
                 spinner.color = "green"
                 spinner.text = "Successfully logged in!"
                 spinner.ok("✔")
@@ -140,8 +139,8 @@ def shared_options(func):
                 debug_log(e)
                 return
 
-        kwargs["username"] = session.username
-        kwargs["password"] = session.password.get_secret_value() if session.password else ""
+        kwargs["username"] = api.username
+        kwargs["password"] = api.password.get_secret_value() if api.password else ""
 
         return func(ctx, **kwargs)
 
@@ -207,7 +206,6 @@ def bookmarks(ctx, **kwargs):
     paginate: bool = kwargs.get("paginate", True)
 
     try:
-        api = AO3Api(session)
         api.sync_bookmarks(query_params={"page": page}, paginate=paginate)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except Exception as e:
