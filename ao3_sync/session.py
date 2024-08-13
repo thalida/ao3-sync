@@ -1,6 +1,8 @@
+from typing import Any
 from urllib.parse import urljoin
 
 import parsel
+import requests
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from requests_ratelimiter import LimiterSession
@@ -17,19 +19,31 @@ class AO3LimiterSession(LimiterSession):
 
 
 class AO3Session(BaseSettings):
+    """
+    Session object for AO3
+
+    This class is a wrapper around requests.Session that handles all requests to AO3.
+    By default, it will rate limit requests to 1 request every 5 seconds.
+
+    Attributes:
+        username (str | None): AO3 username
+        password (SecretStr | None): AO3 password
+        is_logged_in (bool): Is the session logged in? Defaults to False
+        NUM_REQUESTS_PER_SECOND (float | int): Number of requests per second. Defaults to 0.2
+    """
+
     model_config = SettingsConfigDict(
         env_file=settings.ENV_PATH,
         env_prefix="AO3_",
         extra="ignore",
         env_ignore_empty=True,
     )
+
     username: str | None = None
     password: SecretStr | None = None
-
     is_logged_in: bool = False
 
     NUM_REQUESTS_PER_SECOND: float | int = 0.2
-
     _requests: LimiterSession
 
     def __init__(self):
@@ -40,6 +54,13 @@ class AO3Session(BaseSettings):
         )
 
     def set_auth(self, username: str, password: str):
+        """
+        Set the username and password for the AO3Session
+
+        Args:
+            username (str): AO3 username
+            password (str): AO3 password
+        """
         debug_log(f"Updating AO3Session with username: {username} and password: {password}")
         self.username = username
         self.password = SecretStr(password)
@@ -47,9 +68,23 @@ class AO3Session(BaseSettings):
 
     def get(
         self,
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> requests.Response:
+        """
+        Wrapper around requests.get that handles rate limiting and login
+
+        Args:
+            *args: Positional arguments to pass to requests
+            **kwargs: Keyword arguments to pass to requests
+
+        Returns:
+            requests.Response: Response object
+
+        Raises:
+            ao3_sync.exceptions.RateLimitError: If the rate limit is exceeded
+            ao3_sync.exceptions.FailedDownload: If the download fails
+        """
         self.login()
         res = self._requests.get(*args, **kwargs)
         if res.status_code == 429 or res.status_code == 503 or res.status_code == 504:
@@ -61,6 +96,13 @@ class AO3Session(BaseSettings):
         return res
 
     def login(self):
+        """
+        Log into AO3 using the set username and password
+
+        Raises:
+            ao3_sync.exceptions.LoginError: If the login fails
+
+        """
         if self.is_logged_in:
             return
 

@@ -152,9 +152,7 @@ def shared_options(func):
 @click.pass_context
 def cli(ctx):
     """
-    AO3 Sync
-
-    Sync your AO3 Bookmarks
+    Archive your AO3 Account
     """
     ctx.ensure_object(dict)
 
