@@ -1,10 +1,13 @@
 import functools
-from pydantic import SecretStr
+
 import rich_click as click
+from pydantic import SecretStr
+from yaspin import yaspin
+
+import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.api import AO3Api
 from ao3_sync.session import AO3Session
-import ao3_sync.exceptions
 from ao3_sync.utils import debug_log
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -95,15 +98,16 @@ def shared_options(func):
         click.secho("Press Ctrl+C to cancel \n", color=True)
 
         if settings.DEBUG:
-            click.secho("DEBUG MODE: ON", bold=True, fg="red", color=True)
+            click.secho("DEBUG MODE         ENABLED", bold=True, fg="red", color=True)
 
         if settings.FORCE_UPDATE:
-            click.secho("FORCE UPDATE MODE: ON", bold=True, fg="red", color=True)
+            click.secho("FORCE UPDATE MODE  ENABLED", bold=True, fg="cyan", color=True)
 
         if settings.DRY_RUN:
-            click.secho("DRY RUN MODE: ON", bold=True, fg="yellow", color=True)
+            click.secho("DRY RUN MODE       ENABLED", bold=True, fg="yellow", color=True)
 
-        click.echo()
+        if settings.DEBUG or settings.DRY_RUN or settings.FORCE_UPDATE:
+            click.echo()
 
         has_username = username is not None and len(username) > 0
         has_password = password is not None and len(password) > 0
@@ -121,20 +125,20 @@ def shared_options(func):
         else:
             click.secho(f"AO3 password: {SecretStr(password)}", color=True)
 
-        click.secho("\nLogging into AO3...", color=True)
-
-        try:
-            session.set_auth(username, password)
-            session.login()
-            click.secho("Successfully logged in!\n", fg="green", color=True, bold=True)
-        except Exception as e:
-            is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
-            if is_ao3_exception:
-                click.secho(e.args[0], fg="red", color=True, bold=True)
-            else:
-                click.secho("An error occurred while logging in", fg="red", color=True, bold=True)
-
-            debug_log(e)
+        with yaspin(text="Logging into AO3\r", color="yellow") as spinner:
+            try:
+                session.set_auth(username, password)
+                session.login()
+                spinner.color = "green"
+                spinner.text = "Successfully logged in!"
+                spinner.ok("✔")
+            except Exception as e:
+                is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
+                spinner.color = "red"
+                spinner.text = e.args[0] if is_ao3_exception else "An error occurred while logging in"
+                spinner.fail("✘")
+                debug_log(e)
+                return
 
         kwargs["username"] = session.username
         kwargs["password"] = session.password.get_secret_value() if session.password else ""
@@ -199,7 +203,7 @@ def bookmarks(ctx, **kwargs):
     """
     Sync AO3 Bookmarks
     """
-    click.secho("Syncing AO3 Bookmarks", bold=True, color=True)
+    click.secho("\nSyncing AO3 Bookmarks", bold=True, color=True)
 
     page: int = kwargs.get("page", 1)
     paginate: bool = kwargs.get("paginate", True)

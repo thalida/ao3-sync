@@ -869,6 +869,20 @@ files = [
 ]
 
 [[package]]
+name = "termcolor"
+version = "2.3.0"
+description = "ANSI color formatting for output in terminal"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "termcolor-2.3.0-py3-none-any.whl", hash = "sha256:3afb05607b89aed0ffe25202399ee0867ad4d3cb4180d98aaf8eefa6a5f7d475"},
+    {file = "termcolor-2.3.0.tar.gz", hash = "sha256:b5b08f68937f138fe92f6c089b99f1e2da0ae56c52b78bf7075fd95420fd9a5a"},
+]
+
+[package.extras]
+tests = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "tqdm"
 version = "4.66.5"
 description = "Fast, Extensible Progress Meter"
@@ -961,7 +975,21 @@ files = [
 [package.extras]
 dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 
+[[package]]
+name = "yaspin"
+version = "3.0.2"
+description = "Yet Another Terminal Spinner"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "yaspin-3.0.2-py3-none-any.whl", hash = "sha256:5c9b6549b84c8aa7f92426272b670e1302941d72f0275caf32d2ea7db3c269f9"},
+    {file = "yaspin-3.0.2.tar.gz", hash = "sha256:35cae59c682506794a218310445e8326cd8fec410879d1c44953b494b1121e77"},
+]
+
+[package.dependencies]
+termcolor = "2.3.0"
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "af6abde6a8ccadd0b3b65e3a8fbcb63265da1921a76cc7eeca095e13ebe3e969"
+content-hash = "3965c890dc7cd72224f81e1ce09240ae86099a68976a0a9df2f17facf296a320"

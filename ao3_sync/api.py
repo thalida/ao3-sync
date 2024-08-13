@@ -1,16 +1,21 @@
 import json
 import os
+import warnings
 from pathlib import Path
 from urllib.parse import urlparse
 
 import parsel
-from tqdm import tqdm
+from tqdm import TqdmExperimentalWarning
+from tqdm.rich import tqdm
+from yaspin import yaspin
 
 import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.models import Bookmark, ObjectTypes, Series, Work
 from ao3_sync.session import AO3Session
 from ao3_sync.utils import debug_error, debug_log, dryrun_log, log
+
+warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
 class AO3Api:
@@ -91,7 +96,7 @@ class AO3Api:
     ):
         downloaded_page = None
 
-        if settings.DEBUG and cache_type and cache_filename:
+        if not settings.FORCE_UPDATE and settings.DEBUG and cache_type and cache_filename:
             downloaded_page = self._get_cached_file(cache_type, cache_filename)
 
         if not downloaded_page:
@@ -127,17 +132,21 @@ class AO3Api:
         """
         bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params)
         log(f"Found {len(bookmarks)} bookmarks to download")
-        debug_log(f"Found {len(bookmarks)} bookmarks to download")
 
         if not bookmarks or len(bookmarks) == 0:
             log("No bookmarks to download")
             return
 
         # bookmarks are already sorted from oldest to newest, so no need to reverse
-        for bookmark in tqdm(bookmarks):
+        l_bar = "{desc}: {percentage:3.0f}%|"
+        r_bar = "| {n:.1f}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
+        progress_bar_format = f"{l_bar}{{bar}}{r_bar}"
+        progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work", bar_format=progress_bar_format)
+        for bookmark in bookmarks:
             if bookmark.object.type == ObjectTypes.SERIES:
                 debug_log("Skipping series bookmark", bookmark.object.title)
                 self._update_stats({"last_tracked_bookmark": bookmark.id})
+                progress_bar.update(1)
                 continue
 
             work = bookmark.object
@@ -149,11 +158,15 @@ class AO3Api:
             download_links = (
                 parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
             )
+            num_links = len(download_links)
             for link_path in download_links:
                 self._download_work(link_path)
+                progress_bar.update(1 / num_links)
 
             self._update_stats({"last_tracked_bookmark": bookmark.id})
             debug_log("Downloaded work:", work.title)
+
+        progress_bar.close()
 
     def get_num_bookmark_pages(self):
         first_page = self._download_html_page(
@@ -200,11 +213,18 @@ class AO3Api:
             dryrun_log("Faking return with empty list of bookmarks")
             return []
 
-        log("Getting bookmarks...")
-
         bookmark_list = []
 
-        num_pages = self.get_num_bookmark_pages()
+        with yaspin(text="Getting count of bookmark pages\r", color="yellow") as spinner:
+            try:
+                num_pages = self.get_num_bookmark_pages()
+                spinner.color = "green"
+                spinner.text = f"Found {num_pages} pages of bookmarks"
+                spinner.ok("✔")
+            except Exception:
+                spinner.color = "red"
+                spinner.fail("✘")
+                raise
 
         if num_pages == 0 or query_params["page"] > num_pages:
             return bookmark_list
@@ -215,7 +235,7 @@ class AO3Api:
         if num_pages_to_download > 1:
             log(f"Downloading {num_pages_to_download} pages, from page {query_params['page']} to {end_page}")
         else:
-            log(f"Downloading page {query_params['page']}")
+            log(f"Downloading page {query_params['page']} of {num_pages}")
 
         for page_num in tqdm(range(query_params["page"], end_page + 1), desc="Bookmarks Pages"):
             local_query_params = {**query_params, "page": page_num}

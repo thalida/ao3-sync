@@ -1,11 +1,12 @@
+from urllib.parse import urljoin
+
 import parsel
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from requests_ratelimiter import LimiterSession
-from ao3_sync import settings
-import ao3_sync.exceptions
-from urllib.parse import urljoin
 
+import ao3_sync.exceptions
+from ao3_sync import settings
 from ao3_sync.utils import debug_log, dryrun_log
 
 
@@ -27,7 +28,7 @@ class AO3Session(BaseSettings):
 
     is_logged_in: bool = False
 
-    NUM_REQUESTS_PER_SECOND: float | int = 1
+    NUM_REQUESTS_PER_SECOND: float | int = 0.2
 
     _requests: LimiterSession
 
@@ -50,7 +51,14 @@ class AO3Session(BaseSettings):
         **kwargs,
     ):
         self.login()
-        return self._requests.get(*args, **kwargs)
+        res = self._requests.get(*args, **kwargs)
+        if res.status_code == 429 or res.status_code == 503 or res.status_code == 504:
+            debug_log(f"Rate limit exceeded with status code: {res.status_code}")
+            raise ao3_sync.exceptions.RateLimitError("Rate limit exceeded, wait a bit and try again")
+        elif res.status_code != 200:
+            debug_log(f"Failed to download page with status code: {res.status_code}")
+            raise ao3_sync.exceptions.FailedDownload("Failed to download page")
+        return res
 
     def login(self):
         if self.is_logged_in:
