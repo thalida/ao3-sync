@@ -6,13 +6,13 @@ from yaspin import yaspin
 
 import ao3_sync.exceptions
 from ao3_sync import settings
-from ao3_sync.api import AO3Api
-from ao3_sync.models import DownloadFormat
+from ao3_sync.client import Client
+from ao3_sync.enums import DownloadFormat
 from ao3_sync.utils import debug_log
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-api = AO3Api()
+api = Client()
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.OPTION_GROUPS = {
@@ -46,7 +46,7 @@ def shared_options(func):
         "--username",
         "username",
         help="AO3 Username",
-        default=lambda: api.username if api.username else "",
+        default=lambda: api.auth.username if api.auth.username else "",
         required=True,
     )
     @click.option(
@@ -55,7 +55,7 @@ def shared_options(func):
         "password",
         help="AO3 Password",
         hide_input=True,
-        default=lambda: api.password.get_secret_value() if api.password else "",
+        default=lambda: api.auth.password.get_secret_value() if api.auth.password else "",
         required=True,
     )
     @click.option("--debug", is_flag=True, flag_value=True, default=False, help="Enable debug mode")
@@ -112,8 +112,7 @@ def shared_options(func):
 
         with yaspin(text="Logging into AO3\r", color="yellow") as spinner:
             try:
-                api.set_auth(username, password)
-                api.login()
+                api.auth.login(username=username, password=password)
                 spinner.color = "green"
                 spinner.text = "Successfully logged in!"
                 spinner.ok("✔")
@@ -137,6 +136,7 @@ def cli(ctx):
     Archive your AO3 Account
     """
     ctx.ensure_object(dict)
+    return
 
 
 @cli.command(
@@ -202,7 +202,7 @@ def bookmarks(ctx, **kwargs):
     click.secho("\nSyncing AO3 Bookmarks", bold=True, color=True)
 
     try:
-        api.sync_bookmarks(**kwargs)
+        api.bookmarks.sync(**kwargs)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except Exception as e:
         is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
