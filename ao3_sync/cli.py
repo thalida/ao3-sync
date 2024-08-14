@@ -77,12 +77,12 @@ def shared_options(func):
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
-        debug = kwargs.get("debug", False)
-        dry_run = kwargs.get("dry_run", False)
-        force_update = kwargs.get("force", False)
+        debug = kwargs.pop("debug", False)
+        dry_run = kwargs.pop("dry_run", False)
+        force_update = kwargs.pop("force", False)
 
-        username = kwargs.get("username")
-        password = kwargs.get("password")
+        username = kwargs.pop("username")
+        password = kwargs.pop("password")
 
         if debug:
             settings.DEBUG = True
@@ -139,9 +139,6 @@ def shared_options(func):
                 debug_log(e)
                 return
 
-        kwargs["username"] = api.username
-        kwargs["password"] = api.password.get_secret_value() if api.password else ""
-
         return func(ctx, **kwargs)
 
     return wrapper
@@ -182,19 +179,27 @@ def cli(ctx):
 )
 @shared_options
 @click.option(
-    "--page",
-    "page",
+    "--start-page",
+    "start_page",
     type=int,
     default=1,
-    help="Page number",
+    help="Start page number",
     show_default=True,
 )
 @click.option(
-    "--paginate/--no-paginate",
-    "paginate",
-    default=True,
-    help="Enable/Disable automatic pagination",
+    "--end-page",
+    "end_page",
+    type=int,
+    default=None,
+    help="End page number",
     show_default=True,
+)
+@click.option(
+    "--query-params",
+    "query_params",
+    type=str,
+    default=None,
+    help="Query parameters",
 )
 def bookmarks(ctx, **kwargs):
     """
@@ -202,11 +207,8 @@ def bookmarks(ctx, **kwargs):
     """
     click.secho("\nSyncing AO3 Bookmarks", bold=True, color=True)
 
-    page: int = kwargs.get("page", 1)
-    paginate: bool = kwargs.get("paginate", True)
-
     try:
-        api.sync_bookmarks(query_params={"page": page}, paginate=paginate)
+        api.sync_bookmarks(**kwargs)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except Exception as e:
         is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)

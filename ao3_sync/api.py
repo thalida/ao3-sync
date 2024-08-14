@@ -178,26 +178,32 @@ class AO3Api(BaseSettings):
         self,
         url: str,
         query_params: dict | None = None,
+        process_response=None,
+        **kwargs: Any,
     ):
-        html = None
+        contents = None
 
         cache_key = self._get_cache_key(url, query_params)
 
         if not settings.FORCE_UPDATE and settings.DEBUG:
-            html = self._get_cached_file(cache_key)
+            contents = self._get_cached_file(cache_key)
 
-        if not html:
+        if not contents:
             debug_log(f"Fetching {url} with params {query_params}")
-            res = self.fetch(url, params=query_params)
-            html = res.text
+            res = self.fetch(url, params=query_params, **kwargs)
+
+            if process_response:
+                contents = process_response(res)
+            else:
+                contents = res.text
 
             if settings.DEBUG:
-                self._save_cached_file(cache_key, html)
+                self._save_cached_file(cache_key, contents)
 
-        if not html:
+        if not contents:
             raise ao3_sync.exceptions.FailedFetch("Failed to fetch page")
 
-        return html
+        return contents
 
     def fetch_work(self, work: Work):
         """
@@ -225,7 +231,7 @@ class AO3Api(BaseSettings):
         series_url = f"{AO3Api.Routes.SERIES}/{series.id}"
         return self.get_or_fetch(series_url)
 
-    def sync_bookmarks(self, query_params=None, paginate=True):
+    def sync_bookmarks(self, start_page=1, end_page=None, query_params=None):
         """
         Downloads the user's bookmarks from AO3.
 
@@ -233,8 +239,129 @@ class AO3Api(BaseSettings):
             query_params (dict): Query parameters for bookmarks
             paginate (bool): Automatically paginate through bookmarks
         """
-        bookmarks = self.fetch_bookmarks(paginate=paginate, query_params=query_params)
+        bookmarks = self.fetch_bookmark_pages(
+            start_page=start_page,
+            end_page=end_page,
+            query_params=query_params,
+        )
+        bookmarks.reverse()
         self.download_bookmarks(bookmarks)
+
+    def fetch_bookmark_pages(
+        self,
+        start_page=1,
+        end_page=None,
+        query_params=None,
+    ) -> list[Bookmark]:
+        """
+        Gets a list of bookmarks for the user.
+
+        Args:
+            paginate (bool): Automatically paginate through bookmarks
+            query_params (dict): Query parameters for bookmarks
+
+        Returns:
+            list[Bookmark]: List of bookmarks. Ordered from oldest to newest.
+        """
+
+        if query_params is None:
+            query_params = {}
+
+        with yaspin(text="Getting count of bookmark pages\r", color="yellow") as spinner:
+            try:
+                num_pages = self.fetch_num_bookmark_pages()
+                spinner.color = "green"
+                spinner.text = f"Found {num_pages} pages of bookmarks"
+                spinner.ok("✔")
+            except Exception:
+                spinner.color = "red"
+                spinner.fail("✘")
+                raise
+
+        if num_pages == 0 or start_page > num_pages:
+            return []
+
+        end_page = num_pages if end_page is None else end_page
+        num_pages_to_download = end_page - start_page + 1
+
+        if num_pages_to_download > 1:
+            log(f"Downloading {num_pages_to_download} pages, from page {start_page} to {end_page}")
+        else:
+            log(f"Downloading page {start_page} of {num_pages}")
+
+        bookmark_list = []
+        for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages"):
+            local_query_params = {**query_params, "page": page_num}
+            bookmarks = self.fetch_bookmark_page(query_params=local_query_params)
+            bookmark_list.extend(bookmarks)
+
+        return bookmark_list
+
+    def fetch_bookmark_page(self, query_params=None):
+        # Always start at the first page of bookmarks
+        default_params = {
+            "sort_column": "created_at",
+            "user_id": self.username,
+            "page": 1,
+        }
+        if query_params is None:
+            query_params = default_params
+        else:
+            query_params = {**default_params, **query_params}
+
+        if query_params["page"] < 1:
+            raise ao3_sync.exceptions.FailedDownload("Page number must be greater than 0")
+
+        stats = self._get_stats()
+        last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
+        bookmarks_page = self.get_or_fetch(
+            AO3Api.Routes.BOOKMARKS,
+            query_params=query_params,
+        )
+        bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
+        bookmark_list = []
+        for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
+            bookmark_id = bookmark_el.css("::attr(id)").get()
+            if not bookmark_id:
+                debug_error(f"Skipping bookmark {idx} as it has no ID")
+                continue
+
+            if not settings.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
+                debug_log(f"Stopping at bookmark {idx} as it is already cached")
+                break
+
+            title_raw = bookmark_el.css("h4.heading a:not(rel)")
+            item_title = title_raw.css("::text").get()
+            item_href = title_raw.css("::attr(href)").get()
+
+            if not item_href:
+                debug_error(f"Skipping bookmark {idx} as it has no item_href")
+                continue
+
+            _, item_type, item_id = item_href.split("/")
+
+            match f"/{item_type}":
+                case AO3Api.Routes.WORKS:
+                    item = Work(
+                        id=item_id,
+                        title=item_title,
+                    )
+                case AO3Api.Routes.SERIES:
+                    item = Series(
+                        id=item_id,
+                        title=item_title,
+                    )
+                case _:
+                    debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
+                    continue
+
+            bookmark = Bookmark(
+                id=bookmark_id,
+                item=item,
+            )
+            bookmark_list.append(bookmark)
+
+        return bookmark_list
 
     def fetch_num_bookmark_pages(self):
         """
@@ -255,122 +382,6 @@ class AO3Api(BaseSettings):
         last_page_str = parsel.Selector(pagination[-2]).css("::text").get()
         return int(last_page_str) if last_page_str else 0
 
-    def fetch_bookmarks(
-        self,
-        query_params=None,
-        paginate=True,
-    ) -> list[Bookmark]:
-        """
-        Gets a list of bookmarks for the user.
-
-        Args:
-            paginate (bool): Automatically paginate through bookmarks
-            query_params (dict): Query parameters for bookmarks
-
-        Returns:
-            list[Bookmark]: List of bookmarks. Ordered from oldest to newest.
-        """
-
-        # Always start at the first page of bookmarks
-        default_params = {
-            "sort_column": "created_at",
-            "user_id": self.username,
-            "page": 1,
-        }
-        if query_params is None:
-            query_params = default_params
-        else:
-            query_params = {**default_params, **query_params}
-
-        if query_params["page"] < 1:
-            raise ao3_sync.exceptions.FailedDownload("Page number must be greater than 0")
-
-        stats = self._get_stats()
-        last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
-
-        if settings.DRY_RUN:
-            dryrun_log(f"Would get bookmarks with params: {query_params}")
-            if settings.FORCE_UPDATE:
-                dryrun_log("Would have force updated of all bookmarks")
-            dryrun_log(f"Would {'' if paginate else 'not '}have automatically paginated through bookmarks")
-            dryrun_log("Faking return with empty list of bookmarks")
-            return []
-
-        bookmark_list = []
-
-        with yaspin(text="Getting count of bookmark pages\r", color="yellow") as spinner:
-            try:
-                num_pages = self.fetch_num_bookmark_pages()
-                spinner.color = "green"
-                spinner.text = f"Found {num_pages} pages of bookmarks"
-                spinner.ok("✔")
-            except Exception:
-                spinner.color = "red"
-                spinner.fail("✘")
-                raise
-
-        if num_pages == 0 or query_params["page"] > num_pages:
-            return bookmark_list
-
-        end_page = num_pages if paginate else query_params["page"]
-        num_pages_to_download = end_page - query_params["page"] + 1
-
-        if num_pages_to_download > 1:
-            log(f"Downloading {num_pages_to_download} pages, from page {query_params['page']} to {end_page}")
-        else:
-            log(f"Downloading page {query_params['page']} of {num_pages}")
-
-        for page_num in tqdm(range(query_params["page"], end_page + 1), desc="Bookmarks Pages"):
-            local_query_params = {**query_params, "page": page_num}
-            bookmarks_page = self.get_or_fetch(
-                AO3Api.Routes.BOOKMARKS,
-                query_params=local_query_params,
-            )
-            bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
-
-            for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
-                bookmark_id = bookmark_el.css("::attr(id)").get()
-                if not bookmark_id:
-                    debug_error(f"Skipping bookmark {idx} as it has no ID")
-                    continue
-
-                if not settings.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
-                    debug_log(f"Stopping at bookmark {idx} as it is already cached")
-                    break
-
-                title_raw = bookmark_el.css("h4.heading a:not(rel)")
-                item_title = title_raw.css("::text").get()
-                item_href = title_raw.css("::attr(href)").get()
-
-                if not item_href:
-                    debug_error(f"Skipping bookmark {idx} as it has no item_href")
-                    continue
-
-                _, item_type, item_id = item_href.split("/")
-
-                match f"/{item_type}":
-                    case AO3Api.Routes.WORKS:
-                        item = Work(
-                            id=item_id,
-                            title=item_title,
-                        )
-                    case AO3Api.Routes.SERIES:
-                        item = Series(
-                            id=item_id,
-                            title=item_title,
-                        )
-                    case _:
-                        debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
-                        continue
-
-                bookmark = Bookmark(
-                    id=bookmark_id,
-                    item=item,
-                )
-                bookmark_list.insert(0, bookmark)
-
-        return bookmark_list
-
     def download_bookmarks(self, bookmarks: list[Bookmark]):
         if not bookmarks or len(bookmarks) == 0:
             log("No bookmarks to download")
@@ -390,25 +401,28 @@ class AO3Api(BaseSettings):
                 progress_bar.update(1)
                 continue
 
-            work = bookmark.item
-            work_page = self.fetch_work(work)
-            download_links = (
-                parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
-            )
-            num_links = len(download_links)
-            for link_path in download_links:
-                content = self._download_file(link_path)
-
-                parsed_path = urlparse(link_path)
-                filename = os.path.basename(parsed_path.path)
-                self._save_downloaded_file(filename, content)
-
-                progress_bar.update(1 / num_links)
-
+            self.download_work(bookmark.item, progress_bar=progress_bar)
             self._update_stats({"last_tracked_bookmark": bookmark.id})
-            debug_log("Downloaded work:", work.title)
 
         progress_bar.close()
+
+    def download_work(self, work: Work, progress_bar: tqdm | None = None):
+        work_page = self.fetch_work(work)
+        download_links = (
+            parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
+        )
+        num_links = len(download_links)
+        for link_path in download_links:
+            content = self._download_file(link_path)
+
+            parsed_path = urlparse(link_path)
+            filename = os.path.basename(parsed_path.path)
+            self._save_downloaded_file(filename, content)
+
+            if progress_bar:
+                progress_bar.update(1 / num_links)
+
+        debug_log("Downloaded work:", work.title)
 
     def _get_output_folder(self):
         return Path(self.OUTPUT_FOLDER)
@@ -418,14 +432,12 @@ class AO3Api(BaseSettings):
 
     def _download_file(self, relative_path):
         debug_log(f"Downloading file at {relative_path}")
-        r = self.fetch(relative_path, allow_redirects=True)
+        file_content = self.get_or_fetch(relative_path, process_response=lambda res: res.content, allow_redirects=True)
 
-        downloaded_work = r.content
-
-        if not downloaded_work:
+        if not file_content:
             raise ao3_sync.exceptions.FailedDownload("Failed to download")
 
-        return r.content
+        return file_content
 
     def _save_downloaded_file(self, filename, content):
         download_folder = self._get_downloads_folder()
@@ -472,8 +484,9 @@ class AO3Api(BaseSettings):
             with open(filepath, "r") as f:
                 return f.read()
 
-    def _save_cached_file(self, cache_key: str, data: str):
+    def _save_cached_file(self, cache_key: str, data: str | bytes):
         filepath = self._get_cache_filepath(cache_key)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, "w") as f:
+        mode = "wb" if isinstance(data, bytes) else "w"
+        with open(filepath, mode) as f:
             f.write(data)
