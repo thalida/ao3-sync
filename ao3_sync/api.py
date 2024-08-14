@@ -239,7 +239,7 @@ class AO3Api(BaseSettings):
             query_params = {**default_params, **query_params}
 
         if query_params["page"] < 1:
-            raise ao3_sync.exceptions.FailedDownload("Page number must be greater than 0")
+            raise ao3_sync.exceptions.FailedRequest("Page number must be greater than 0")
 
         stats = self._get_stats()
         last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
@@ -402,7 +402,7 @@ class AO3Api(BaseSettings):
 
         Raises:
             ao3_sync.exceptions.RateLimitError: If the rate limit is exceeded
-            ao3_sync.exceptions.FailedDownload: If the download fails
+            ao3_sync.exceptions.FailedRequest: If the request fails
         """
         self.login()
         res = self._requests.get(*args, **kwargs)
@@ -411,7 +411,7 @@ class AO3Api(BaseSettings):
             raise ao3_sync.exceptions.RateLimitError("Rate limit exceeded, wait a bit and try again")
         elif res.status_code != 200:
             debug_log(f"Failed to download page with status code: {res.status_code}")
-            raise ao3_sync.exceptions.FailedDownload("Failed to download page")
+            raise ao3_sync.exceptions.FailedRequest("Failed to fetch page")
         return res
 
     def get_or_fetch(
@@ -441,7 +441,7 @@ class AO3Api(BaseSettings):
                 self._save_cached_file(cache_key, contents)
 
         if not contents:
-            raise ao3_sync.exceptions.FailedFetch("Failed to fetch page")
+            raise ao3_sync.exceptions.FailedRequest("Failed to fetch page")
 
         return contents
 

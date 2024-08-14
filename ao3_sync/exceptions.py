@@ -2,29 +2,29 @@ class AO3Exception(Exception):
     pass
 
 
-class LoginError(AO3Exception):
-    """
-    Raised when the user is not logged in.
-    """
-
-    def __init__(self, message, errors=[]):
-        super().__init__(message)
-        self.errors = errors
-
-
-class FailedFetch(AO3Exception):
-    """
-    Raised when a download fails.
-    """
-
-    def __init__(self, message, errors=[]):
-        super().__init__(message)
-        self.errors = errors
-
-
 class FailedDownload(AO3Exception):
     """
     Raised when a download fails.
+    """
+
+    def __init__(self, message, errors=[]):
+        super().__init__(message)
+        self.errors = errors
+
+
+class FailedRequest(AO3Exception):
+    """
+    Generic exception for failed requests.
+    """
+
+    def __init__(self, message, errors=[]):
+        super().__init__(message)
+        self.errors = errors
+
+
+class LoginError(AO3Exception):
+    """
+    Raised when the user is not logged in.
     """
 
     def __init__(self, message, errors=[]):
