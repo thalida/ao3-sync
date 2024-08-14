@@ -1,4 +1,8 @@
 class AO3Exception(Exception):
+    """
+    Base class for all AO3 exceptions
+    """
+
     pass
 
 
