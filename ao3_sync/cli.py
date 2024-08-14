@@ -7,6 +7,7 @@ from yaspin import yaspin
 import ao3_sync.exceptions
 from ao3_sync import settings
 from ao3_sync.api import AO3Api
+from ao3_sync.models import DownloadFormat
 from ao3_sync.utils import debug_log
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -32,7 +33,7 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Advanced Options",
-            "options": ["--debug", "--dry-run", "--force"],
+            "options": ["--debug", "--force"],
         },
     ],
 }
@@ -59,14 +60,6 @@ def shared_options(func):
     )
     @click.option("--debug", is_flag=True, flag_value=True, default=False, help="Enable debug mode")
     @click.option(
-        "--dry-run",
-        "dry_run",
-        is_flag=True,
-        flag_value=True,
-        default=False,
-        help="Enable dry run mode",
-    )
-    @click.option(
         "-f",
         "--force",
         "force",
@@ -78,7 +71,6 @@ def shared_options(func):
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
         debug = kwargs.pop("debug", False)
-        dry_run = kwargs.pop("dry_run", False)
         force_update = kwargs.pop("force", False)
 
         username = kwargs.pop("username")
@@ -87,9 +79,6 @@ def shared_options(func):
         if debug:
             settings.DEBUG = True
 
-        if dry_run:
-            settings.DRY_RUN = True
-
         if force_update:
             settings.FORCE_UPDATE = True
 
@@ -97,15 +86,12 @@ def shared_options(func):
         click.secho("Press Ctrl+C to cancel \n", color=True)
 
         if settings.DEBUG:
-            click.secho("DEBUG MODE         ENABLED", bold=True, fg="red", color=True)
+            click.secho("DEBUG MODE         ENABLED", bold=True, fg="yellow", color=True)
 
         if settings.FORCE_UPDATE:
-            click.secho("FORCE UPDATE MODE  ENABLED", bold=True, fg="cyan", color=True)
+            click.secho("FORCE UPDATE MODE  ENABLED", bold=True, fg="red", color=True)
 
-        if settings.DRY_RUN:
-            click.secho("DRY RUN MODE       ENABLED", bold=True, fg="yellow", color=True)
-
-        if settings.DEBUG or settings.DRY_RUN or settings.FORCE_UPDATE:
+        if settings.DEBUG or settings.FORCE_UPDATE:
             click.echo()
 
         has_username = username is not None and len(username) > 0
@@ -200,6 +186,14 @@ def cli(ctx):
     type=str,
     default=None,
     help="Query parameters",
+)
+@click.option(
+    "--format",
+    "formats",
+    type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
+    default=["all"],
+    help="Formats to download",
+    multiple=True,
 )
 def bookmarks(ctx, **kwargs):
     """

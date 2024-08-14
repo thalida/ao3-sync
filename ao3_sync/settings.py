@@ -24,7 +24,6 @@ class Settings(BaseSettings):
         ENV_PREFIX (str): Prefix for environment variables. Defaults to AO3_
         HOST (str): Host URL of the AO3 website. Defaults to https://archiveofourown.org
         DEBUG (bool): Enable debug mode
-        DRY_RUN (bool): Enable dry run mode
         FORCE_UPDATE (bool): Force update of existing data
     """
 
@@ -35,7 +34,6 @@ class Settings(BaseSettings):
     ENV_PREFIX: str = ENV_PREFIX
 
     DEBUG: bool = False
-    DRY_RUN: bool = False
     FORCE_UPDATE: bool = False
 
     HOST: str = "https://archiveofourown.org"

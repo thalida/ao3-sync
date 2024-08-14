@@ -4,7 +4,6 @@ from rich.console import Console
 from ao3_sync import settings
 
 console = Console()
-dryrun_console = Console(style="yellow")
 
 
 def log(*args, **kwargs):
@@ -43,15 +42,3 @@ def debug_info(*args, **kwargs):
         return
 
     logger.opt(depth=1).info(*args, **kwargs)
-
-
-def dryrun_log(message, *args, **kwargs):
-    """
-    Dry Run Mode Only: User-facing log
-    """
-    if not settings.DRY_RUN:
-        return
-
-    message = f"[bold][DRY RUN][/bold] {message}"
-
-    dryrun_console.print(message, *args, **kwargs)
