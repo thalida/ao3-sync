@@ -154,6 +154,7 @@ class AO3Api(BaseSettings):
             start_page (int): Starting page of bookmarks to download. Defaults to 1
             end_page (int): Ending page of bookmarks to download. Defaults to None
             query_params (dict): Query parameters for bookmarks
+            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
         """
         bookmarks = self.fetch_bookmark_pages(
             start_page=start_page,
@@ -180,7 +181,7 @@ class AO3Api(BaseSettings):
             query_params (dict): Query parameters for bookmarks
 
         Returns:
-            list[Bookmark]: List of bookmarks. Ordered from newest to oldest.
+            bookmarks (Bookmark): List of bookmarks. Ordered from newest to oldest.
         """
 
         if query_params is None:
@@ -224,7 +225,7 @@ class AO3Api(BaseSettings):
             query_params (dict): Query parameters for bookmarks
 
         Returns:
-            list[Bookmark]: List of bookmarks. Ordered from newest to oldest.
+            bookmarks (Bookmark): List of bookmarks. Ordered from newest to oldest.
         """
 
         default_params = {
@@ -322,6 +323,7 @@ class AO3Api(BaseSettings):
 
         Args:
             bookmarks (list[Bookmark]): List of bookmarks to download
+            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
 
         """
 
@@ -359,6 +361,7 @@ class AO3Api(BaseSettings):
 
         Args:
             work (Work): Work to download
+            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
             progress_bar (tqdm | None): Progress bar to update
         """
 
@@ -450,7 +453,7 @@ class AO3Api(BaseSettings):
             work (Work): Work to fetch
 
         Returns:
-            str: HTML content of the work
+            html (str): HTML content of the work
         """
         work_url = f"{AO3Api.Routes.WORKS}/{work.id}"
         return self.get_or_fetch(work_url)
@@ -463,7 +466,7 @@ class AO3Api(BaseSettings):
             series (Series): Series to fetch
 
         Returns:
-            str: HTML content of the series
+            html (str): HTML content of the series
         """
         series_url = f"{AO3Api.Routes.SERIES}/{series.id}"
         return self.get_or_fetch(series_url)

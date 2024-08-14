@@ -11,3 +11,5 @@ title: Models
 ## ::: ao3_sync.models.Series
 
 ## ::: ao3_sync.models.ItemType
+
+## ::: ao3_sync.models.DownloadFormat
