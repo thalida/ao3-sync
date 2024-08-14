@@ -17,7 +17,7 @@ from yaspin import yaspin
 
 import ao3_sync.exceptions
 from ao3_sync import settings
-from ao3_sync.models import Bookmark, ObjectTypes, Series, Work
+from ao3_sync.models import Bookmark, ItemType, Series, Work
 from ao3_sync.utils import debug_error, debug_log, dryrun_log, log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
@@ -44,7 +44,6 @@ class AO3Api(BaseSettings):
         password (SecretStr | None): AO3 password
         is_authenticated (bool): Whether the session is authenticated. Defaults to False
 
-        BOOKMARKS_URL_PATH (str): Bookmarks URL path for the API. Defaults to "/bookmarks"
         NUM_REQUESTS_PER_SECOND (float | int): Number of requests per second. Defaults to 0.2 (1 request every 5 seconds)
 
         OUTPUT_FOLDER (str): Output folder for the API. Defaults to "output"
@@ -64,7 +63,12 @@ class AO3Api(BaseSettings):
     password: SecretStr | None = None
     _is_authenticated: bool = False
 
-    BOOKMARKS_URL_PATH: str = "/bookmarks"
+    class Routes:
+        BOOKMARKS = "/bookmarks"
+        WORKS = "/works"
+        SERIES = "/series"
+        DOWNLOADS = "/downloads"
+
     NUM_REQUESTS_PER_SECOND: float | int = 0.2
 
     OUTPUT_FOLDER: str = "output"
@@ -81,6 +85,10 @@ class AO3Api(BaseSettings):
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
 
+    @property
+    def is_authenticated(self):
+        return self._is_authenticated
+
     def set_auth(self, username: str, password: str):
         """
         Set the username and password for the AO3Session
@@ -93,39 +101,6 @@ class AO3Api(BaseSettings):
         self.username = username
         self.password = SecretStr(password)
         self._is_authenticated = False
-
-    @property
-    def is_authenticated(self):
-        return self._is_authenticated
-
-    def fetch(
-        self,
-        *args: Any,
-        **kwargs: Any,
-    ) -> requests.Response:
-        """
-        Wrapper around requests.get that handles rate limiting and login
-
-        Args:
-            *args: Positional arguments to pass to requests
-            **kwargs: Keyword arguments to pass to requests
-
-        Returns:
-            requests.Response: Response object
-
-        Raises:
-            ao3_sync.exceptions.RateLimitError: If the rate limit is exceeded
-            ao3_sync.exceptions.FailedDownload: If the download fails
-        """
-        self.login()
-        res = self._requests.get(*args, **kwargs)
-        if res.status_code == 429 or res.status_code == 503 or res.status_code == 504:
-            debug_log(f"Rate limit exceeded with status code: {res.status_code}")
-            raise ao3_sync.exceptions.RateLimitError("Rate limit exceeded, wait a bit and try again")
-        elif res.status_code != 200:
-            debug_log(f"Failed to download page with status code: {res.status_code}")
-            raise ao3_sync.exceptions.FailedDownload("Failed to download page")
-        return res
 
     def login(self):
         """
@@ -170,6 +145,86 @@ class AO3Api(BaseSettings):
         self._is_authenticated = True
         debug_log("Successfully logged in")
 
+    def fetch(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> requests.Response:
+        """
+        Wrapper around requests.get that handles rate limiting and login
+
+        Args:
+            *args: Positional arguments to pass to requests
+            **kwargs: Keyword arguments to pass to requests
+
+        Returns:
+            requests.Response: Response object
+
+        Raises:
+            ao3_sync.exceptions.RateLimitError: If the rate limit is exceeded
+            ao3_sync.exceptions.FailedDownload: If the download fails
+        """
+        self.login()
+        res = self._requests.get(*args, **kwargs)
+        if res.status_code == 429 or res.status_code == 503 or res.status_code == 504:
+            debug_log(f"Rate limit exceeded with status code: {res.status_code}")
+            raise ao3_sync.exceptions.RateLimitError("Rate limit exceeded, wait a bit and try again")
+        elif res.status_code != 200:
+            debug_log(f"Failed to download page with status code: {res.status_code}")
+            raise ao3_sync.exceptions.FailedDownload("Failed to download page")
+        return res
+
+    def get_or_fetch(
+        self,
+        url: str,
+        query_params: dict | None = None,
+    ):
+        html = None
+
+        cache_key = self._get_cache_key(url, query_params)
+
+        if not settings.FORCE_UPDATE and settings.DEBUG:
+            html = self._get_cached_file(cache_key)
+
+        if not html:
+            debug_log(f"Fetching {url} with params {query_params}")
+            res = self.fetch(url, params=query_params)
+            html = res.text
+
+            if settings.DEBUG:
+                self._save_cached_file(cache_key, html)
+
+        if not html:
+            raise ao3_sync.exceptions.FailedFetch("Failed to fetch page")
+
+        return html
+
+    def fetch_work(self, work: Work):
+        """
+        Fetches a work from AO3.
+
+        Args:
+            work (Work): Work to fetch
+
+        Returns:
+            str: HTML content of the work
+        """
+        work_url = f"{AO3Api.Routes.WORKS}/{work.id}"
+        return self.get_or_fetch(work_url)
+
+    def fetch_series(self, series: Series):
+        """
+        Fetches a series from AO3.
+
+        Args:
+            series (Series): Series to fetch
+
+        Returns:
+            str: HTML content of the series
+        """
+        series_url = f"{AO3Api.Routes.SERIES}/{series.id}"
+        return self.get_or_fetch(series_url)
+
     def sync_bookmarks(self, query_params=None, paginate=True):
         """
         Downloads the user's bookmarks from AO3.
@@ -178,18 +233,18 @@ class AO3Api(BaseSettings):
             query_params (dict): Query parameters for bookmarks
             paginate (bool): Automatically paginate through bookmarks
         """
-        bookmarks = self.get_bookmarks(paginate=paginate, query_params=query_params)
+        bookmarks = self.fetch_bookmarks(paginate=paginate, query_params=query_params)
         self.download_bookmarks(bookmarks)
 
-    def get_num_bookmark_pages(self):
+    def fetch_num_bookmark_pages(self):
         """
         Gets the number of bookmark pages for the user.
 
         Returns:
             num_pages (int): Number of bookmark pages
         """
-        first_page = self._download_html_page(
-            self.BOOKMARKS_URL_PATH,
+        first_page = self.get_or_fetch(
+            AO3Api.Routes.BOOKMARKS,
             query_params={"page": 1, "user_id": self.username, "sort_column": "created_at"},
         )
         pagination = parsel.Selector(first_page).css("ol.pagination li").getall()
@@ -200,10 +255,10 @@ class AO3Api(BaseSettings):
         last_page_str = parsel.Selector(pagination[-2]).css("::text").get()
         return int(last_page_str) if last_page_str else 0
 
-    def get_bookmarks(
+    def fetch_bookmarks(
         self,
-        paginate=True,
         query_params=None,
+        paginate=True,
     ) -> list[Bookmark]:
         """
         Gets a list of bookmarks for the user.
@@ -245,7 +300,7 @@ class AO3Api(BaseSettings):
 
         with yaspin(text="Getting count of bookmark pages\r", color="yellow") as spinner:
             try:
-                num_pages = self.get_num_bookmark_pages()
+                num_pages = self.fetch_num_bookmark_pages()
                 spinner.color = "green"
                 spinner.text = f"Found {num_pages} pages of bookmarks"
                 spinner.ok("✔")
@@ -267,8 +322,8 @@ class AO3Api(BaseSettings):
 
         for page_num in tqdm(range(query_params["page"], end_page + 1), desc="Bookmarks Pages"):
             local_query_params = {**query_params, "page": page_num}
-            bookmarks_page = self._download_html_page(
-                self.BOOKMARKS_URL_PATH,
+            bookmarks_page = self.get_or_fetch(
+                AO3Api.Routes.BOOKMARKS,
                 query_params=local_query_params,
             )
             bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
@@ -284,32 +339,33 @@ class AO3Api(BaseSettings):
                     break
 
                 title_raw = bookmark_el.css("h4.heading a:not(rel)")
-                object_title = title_raw.css("::text").get()
-                object_href = title_raw.css("::attr(href)").get()
+                item_title = title_raw.css("::text").get()
+                item_href = title_raw.css("::attr(href)").get()
 
-                if not object_href:
-                    debug_error(f"Skipping bookmark {idx} as it has no object_href")
+                if not item_href:
+                    debug_error(f"Skipping bookmark {idx} as it has no item_href")
                     continue
 
-                _, object_type, object_id = object_href.split("/")
+                _, item_type, item_id = item_href.split("/")
 
-                if object_type == ObjectTypes.WORK:
-                    obj = Work(
-                        id=object_id,
-                        title=object_title,
-                    )
-                elif object_type == ObjectTypes.SERIES:
-                    obj = Series(
-                        id=object_id,
-                        title=object_title,
-                    )
-                else:
-                    debug_error(f"Skipping bookmark {idx} as it has an unknown object_type: {object_type}")
-                    continue
+                match f"/{item_type}":
+                    case AO3Api.Routes.WORKS:
+                        item = Work(
+                            id=item_id,
+                            title=item_title,
+                        )
+                    case AO3Api.Routes.SERIES:
+                        item = Series(
+                            id=item_id,
+                            title=item_title,
+                        )
+                    case _:
+                        debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
+                        continue
 
                 bookmark = Bookmark(
                     id=bookmark_id,
-                    object=obj,
+                    item=item,
                 )
                 bookmark_list.insert(0, bookmark)
 
@@ -328,20 +384,25 @@ class AO3Api(BaseSettings):
         progress_bar_format = f"{l_bar}{{bar}}{r_bar}"
         progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work", bar_format=progress_bar_format)
         for bookmark in bookmarks:
-            if bookmark.object.type == ObjectTypes.SERIES:
-                debug_log("Skipping series bookmark", bookmark.object.title)
+            if bookmark.item.item_type == ItemType.SERIES:
+                debug_log("Skipping series bookmark", bookmark.item.title)
                 self._update_stats({"last_tracked_bookmark": bookmark.id})
                 progress_bar.update(1)
                 continue
 
-            work = bookmark.object
-            work_page = self._download_html_page(work.url)
+            work = bookmark.item
+            work_page = self.fetch_work(work)
             download_links = (
                 parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
             )
             num_links = len(download_links)
             for link_path in download_links:
-                self._download_work(link_path)
+                content = self._download_file(link_path)
+
+                parsed_path = urlparse(link_path)
+                filename = os.path.basename(parsed_path.path)
+                self._save_downloaded_file(filename, content)
+
                 progress_bar.update(1 / num_links)
 
             self._update_stats({"last_tracked_bookmark": bookmark.id})
@@ -354,6 +415,17 @@ class AO3Api(BaseSettings):
 
     def _get_downloads_folder(self):
         return self._get_output_folder() / self.DOWNLOADS_FOLDER
+
+    def _download_file(self, relative_path):
+        debug_log(f"Downloading file at {relative_path}")
+        r = self.fetch(relative_path, allow_redirects=True)
+
+        downloaded_work = r.content
+
+        if not downloaded_work:
+            raise ao3_sync.exceptions.FailedDownload("Failed to download")
+
+        return r.content
 
     def _save_downloaded_file(self, filename, content):
         download_folder = self._get_downloads_folder()
@@ -405,41 +477,3 @@ class AO3Api(BaseSettings):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w") as f:
             f.write(data)
-
-    def _download_html_page(
-        self,
-        url: str,
-        query_params: dict | None = None,
-    ):
-        downloaded_page = None
-
-        cache_key = self._get_cache_key(url, query_params)
-
-        if not settings.FORCE_UPDATE and settings.DEBUG:
-            downloaded_page = self._get_cached_file(cache_key)
-
-        if not downloaded_page:
-            debug_log(f"Downloading page {url} with params {query_params}")
-            res = self.fetch(url, params=query_params)
-            downloaded_page = res.text
-
-            if settings.DEBUG:
-                self._save_cached_file(cache_key, downloaded_page)
-
-        if not downloaded_page:
-            raise ao3_sync.exceptions.FailedDownload("Failed to download page")
-
-        return downloaded_page
-
-    def _download_work(self, relative_path):
-        debug_log(f"Downloading work from {relative_path}")
-        r = self.fetch(relative_path, allow_redirects=True)
-
-        downloaded_work = r.content
-
-        if not downloaded_work:
-            raise ao3_sync.exceptions.FailedDownload("Failed to download work")
-
-        parsed_path = urlparse(relative_path)
-        filename = os.path.basename(parsed_path.path)
-        self._save_downloaded_file(filename, r.content)

@@ -12,6 +12,16 @@ class LoginError(AO3Exception):
         self.errors = errors
 
 
+class FailedFetch(AO3Exception):
+    """
+    Raised when a download fails.
+    """
+
+    def __init__(self, message, errors=[]):
+        super().__init__(message)
+        self.errors = errors
+
+
 class FailedDownload(AO3Exception):
     """
     Raised when a download fails.

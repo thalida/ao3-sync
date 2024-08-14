@@ -1,16 +1,19 @@
-from pydantic import BaseModel, computed_field
+from enum import Enum
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
-class ObjectTypes:
+class ItemType(Enum):
     """
-    Enum for AO3 object types
+    Enum for AO3 item types
 
     Attributes:
-        WORK (str): Work object type. Value is "works"
-        SERIES (str): Series object type. Value is "series"
+        WORK (str): work
+        SERIES (str): series
     """
 
-    WORK = "works"
+    WORK = "work"
     SERIES = "series"
 
 
@@ -19,20 +22,15 @@ class Work(BaseModel):
     Represents an AO3 work
 
     Attributes:
-        type (ObjectTypes): works
+        item_type (ItemType): work
         id (str): Work ID
         title (str): Work title
         url (str): Work URL (computed)
     """
 
-    type: str = ObjectTypes.WORK
+    item_type: Literal[ItemType.WORK] = ItemType.WORK
     id: str | None = None
     title: str | None = None
-
-    @computed_field
-    @property
-    def url(self) -> str:
-        return f"/{self.type}/{self.id}"
 
 
 class Series(BaseModel):
@@ -40,20 +38,15 @@ class Series(BaseModel):
     Represents an AO3 series
 
     Attributes:
-        type (ObjectTypes): series
+        item_type (ItemType): series
         id (str): Series ID
         title (str): Series title
         url (str): Series URL (computed)
     """
 
-    type: str = ObjectTypes.SERIES
+    item_type: Literal[ItemType.SERIES] = ItemType.SERIES
     id: str | None = None
     title: str | None = None
-
-    @computed_field
-    @property
-    def url(self) -> str:
-        return f"/{self.type}/{self.id}"
 
 
 class Bookmark(BaseModel):
@@ -62,8 +55,8 @@ class Bookmark(BaseModel):
 
     Attributes:
         id (str): Bookmark ID
-        object (Work | Series): Bookmark object
+        item (Work | Series): Bookmarked item
     """
 
     id: str
-    object: Work | Series
+    item: Work | Series = Field(discriminator="item_type")

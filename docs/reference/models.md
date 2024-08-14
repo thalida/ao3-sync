@@ -10,4 +10,4 @@ title: Models
 
 ## ::: ao3_sync.models.Series
 
-## ::: ao3_sync.models.ObjectTypes
+## ::: ao3_sync.models.ItemType
