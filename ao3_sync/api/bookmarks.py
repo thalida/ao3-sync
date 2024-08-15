@@ -101,13 +101,12 @@ class BookmarksApi:
 
         bookmark_list = []
         for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages", unit="pg"):
-            local_query_params = {**query_params, "page": page_num}
-            bookmarks = self.fetch_page(query_params=local_query_params)
+            bookmarks = self.fetch_page(page_num, query_params=query_params)
             bookmark_list.extend(bookmarks)
 
         return bookmark_list
 
-    def fetch_page(self, query_params=None):
+    def fetch_page(self, page: int, query_params=None):
         """
         Gets a page of bookmarks for the user.
 
@@ -120,13 +119,13 @@ class BookmarksApi:
 
         default_params = {
             "sort_column": "created_at",
-            "user_id": self._client.auth.username,
-            "page": 1,
         }
         if query_params is None:
-            query_params = default_params
-        else:
-            query_params = {**default_params, **query_params}
+            query_params = {}
+
+        query_params = {**default_params, **query_params}
+        query_params["page"] = page
+        query_params["user_id"] = self._client.auth.username
 
         if query_params["page"] < 1:
             raise ao3_sync.exceptions.FailedRequest("Page number must be greater than 0")
