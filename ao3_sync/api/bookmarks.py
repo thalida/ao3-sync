@@ -8,10 +8,10 @@ from tqdm.rich import tqdm
 from yaspin import yaspin
 
 import ao3_sync.exceptions
-from ao3_sync.client import Client
+from ao3_sync.api import AO3Api
+from ao3_sync.api.series import Series
+from ao3_sync.api.works import Work
 from ao3_sync.enums import DownloadFormat, ItemType
-from ao3_sync.resources.series import Series
-from ao3_sync.resources.works import Work
 from ao3_sync.utils import debug_error, debug_log, log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
@@ -33,7 +33,7 @@ class Bookmark(BaseModel):
 class BookmarksAPI:
     URL_PATH: str = "/bookmarks"
 
-    def __init__(self, client: Client):
+    def __init__(self, client: AO3Api):
         self._client = client
 
     def sync(
@@ -106,7 +106,7 @@ class BookmarksAPI:
             log(f"Downloading page {start_page} of {num_pages}")
 
         bookmark_list = []
-        for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages"):
+        for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages", unit="pg"):
             local_query_params = {**query_params, "page": page_num}
             bookmarks = self.fetch_page(query_params=local_query_params)
             bookmark_list.extend(bookmarks)
@@ -228,12 +228,7 @@ class BookmarksAPI:
             return
 
         log(f"Downloading {len(bookmarks)} bookmarks")
-
-        # bookmarks are already sorted from oldest to newest, so no need to reverse
-        l_bar = "{desc}: {percentage:3.0f}%|"
-        r_bar = "| {n:.1f}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
-        progress_bar_format = f"{l_bar}{{bar}}{r_bar}"
-        progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work", bar_format=progress_bar_format)
+        progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work")
         for bookmark in bookmarks:
             if bookmark.item.item_type == ItemType.SERIES:
                 debug_log("Skipping series bookmark", bookmark.item.title)

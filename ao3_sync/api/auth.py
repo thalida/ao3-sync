@@ -3,14 +3,14 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 import ao3_sync.exceptions
-from ao3_sync.client import Client
+from ao3_sync.api import AO3Api
 from ao3_sync.utils import debug_log
 
 
 class AuthAPI(BaseSettings):
     _is_authenticated: bool = False
 
-    def __init__(self, client: Client, *args, **kwargs):
+    def __init__(self, client: AO3Api, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._client = client
 

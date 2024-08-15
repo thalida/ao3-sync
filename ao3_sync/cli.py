@@ -6,13 +6,13 @@ from yaspin import yaspin
 
 import ao3_sync.exceptions
 from ao3_sync import settings
-from ao3_sync.client import Client
+from ao3_sync.api import AO3Api
 from ao3_sync.enums import DownloadFormat
 from ao3_sync.utils import debug_log
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-api = Client()
+api = AO3Api()
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.OPTION_GROUPS = {

@@ -3,7 +3,7 @@ import json
 import os
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -18,6 +18,12 @@ from ao3_sync.utils import debug_log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
+if TYPE_CHECKING:
+    from ao3_sync.api.auth import AuthAPI
+    from ao3_sync.api.bookmarks import BookmarksAPI
+    from ao3_sync.api.series import SeriesAPI
+    from ao3_sync.api.works import WorksAPI
+
 
 class AO3LimiterSession(LimiterSession):
     def __init__(self, host, *args, **kwargs):
@@ -29,7 +35,7 @@ class AO3LimiterSession(LimiterSession):
         return super().request(method, ao3_url, *args, **kwargs)
 
 
-class Client(BaseSettings):
+class AO3Api(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=settings.ENV_PATH,
         env_prefix="AO3_",
@@ -59,29 +65,47 @@ class Client(BaseSettings):
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
 
+        # Resources
+        self._auth: Optional["AuthAPI"] = None
+        self._bookmarks: Optional["BookmarksAPI"] = None
+        self._series: Optional["SeriesAPI"] = None
+        self._works: Optional["WorksAPI"] = None
+
     @property
     def auth(self):
-        from ao3_sync.resources.auth import AuthAPI
+        if self._auth is None:
+            from ao3_sync.api.auth import AuthAPI
 
-        return AuthAPI(self)
+            self._auth = AuthAPI(self)
+
+        return self._auth
 
     @property
     def bookmarks(self):
-        from ao3_sync.resources.bookmarks import BookmarksAPI
+        if self._bookmarks is None:
+            from ao3_sync.api.bookmarks import BookmarksAPI
 
-        return BookmarksAPI(self)
+            self._bookmarks = BookmarksAPI(self)
+
+        return self._bookmarks
 
     @property
     def series(self):
-        from ao3_sync.resources.series import SeriesAPI
+        if self._series is None:
+            from ao3_sync.api.series import SeriesAPI
 
-        return SeriesAPI(self)
+            self._series = SeriesAPI(self)
+
+        return self._series
 
     @property
     def works(self):
-        from ao3_sync.resources.works import WorksAPI
+        if self._works is None:
+            from ao3_sync.api.works import WorksAPI
 
-        return WorksAPI(self)
+            self._works = WorksAPI(self)
+
+        return self._works
 
     def fetch(
         self,

@@ -8,7 +8,7 @@ import parsel
 from pydantic import BaseModel
 from tqdm import TqdmExperimentalWarning
 
-from ao3_sync.client import Client
+from ao3_sync.api import AO3Api
 from ao3_sync.enums import DownloadFormat, ItemType
 from ao3_sync.utils import debug_log
 
@@ -34,7 +34,7 @@ class Work(BaseModel):
 class WorksAPI:
     URL_PATH: str = "/works"
 
-    def __init__(self, client: Client):
+    def __init__(self, client: AO3Api):
         self._client = client
 
     def sync(self, work: Work, formats: list[DownloadFormat] | Literal["all"] = "all"):
