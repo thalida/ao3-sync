@@ -6,10 +6,6 @@ title: Models
 
 ## ::: ao3_sync.models.Bookmark
 
-## ::: ao3_sync.models.Work
-
 ## ::: ao3_sync.models.Series
 
-## ::: ao3_sync.models.ItemType
-
-## ::: ao3_sync.models.DownloadFormat
+## ::: ao3_sync.models.Work

@@ -15,6 +15,16 @@ warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
 class WorksApi:
+    """
+    API for handling AO3 works
+
+    Args:
+        client (AO3Api): AO3Api instance
+
+    Attributes:
+        URL_PATH (str): URL path for works
+    """
+
     URL_PATH: str = "/works"
 
     def __init__(self, client: AO3Api):
@@ -76,8 +86,8 @@ class WorksApi:
         parsed_path = urlparse(download_url)
         filename = os.path.basename(parsed_path.path)
         ext = Path(filename).suffix
-        self._client.debug_log(f"Downloading {ext} for work: {work.title}")
+        self._client._debug_log(f"Downloading {ext} for work: {work.title}")
         content = self._client._download_file(download_url)
         self._client._save_downloaded_file(filename, content)
 
-        self._client.debug_log("Downloaded work:", work.title)
+        self._client._debug_log("Downloaded work:", work.title)

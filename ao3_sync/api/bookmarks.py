@@ -15,6 +15,16 @@ warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
 class BookmarksApi:
+    """
+    API for handling AO3 bookmarks
+
+    Args:
+        client (AO3Api): AO3Api instance
+
+    Attributes:
+        URL_PATH (str): URL path for bookmarks
+    """
+
     URL_PATH: str = "/bookmarks"
 
     def __init__(self, client: AO3Api):
@@ -85,9 +95,9 @@ class BookmarksApi:
         num_pages_to_download = end_page - start_page + 1
 
         if num_pages_to_download > 1:
-            self._client.log(f"Downloading {num_pages_to_download} pages, from page {start_page} to {end_page}")
+            self._client._log(f"Downloading {num_pages_to_download} pages, from page {start_page} to {end_page}")
         else:
-            self._client.log(f"Downloading page {start_page} of {num_pages}")
+            self._client._log(f"Downloading page {start_page} of {num_pages}")
 
         bookmark_list = []
         for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages", unit="pg"):
@@ -134,11 +144,11 @@ class BookmarksApi:
         for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
             bookmark_id = bookmark_el.css("::attr(id)").get()
             if not bookmark_id:
-                self._client.debug_error(f"Skipping bookmark {idx} as it has no ID")
+                self._client._debug_error(f"Skipping bookmark {idx} as it has no ID")
                 continue
 
             if self._client.USE_HISTORY and bookmark_id == last_tracked_bookmark:
-                self._client.debug_log(f"Stopping at bookmark {idx} as it is already cached")
+                self._client._debug_log(f"Stopping at bookmark {idx} as it is already cached")
                 break
 
             title_raw = bookmark_el.css("h4.heading a:not(rel)")
@@ -146,7 +156,7 @@ class BookmarksApi:
             item_href = title_raw.css("::attr(href)").get()
 
             if not item_href:
-                self._client.debug_error(f"Skipping bookmark {idx} as it has no item_href")
+                self._client._debug_error(f"Skipping bookmark {idx} as it has no item_href")
                 continue
 
             _, item_type, item_id = item_href.split("/")
@@ -163,7 +173,7 @@ class BookmarksApi:
                         title=item_title,
                     )
                 case _:
-                    self._client.debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
+                    self._client._debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
                     continue
 
             bookmark = Bookmark(
@@ -208,16 +218,16 @@ class BookmarksApi:
         """
 
         if not bookmarks or len(bookmarks) == 0:
-            self._client.log("No bookmarks to download")
+            self._client._log("No bookmarks to download")
             return
 
-        self._client.log(f"Downloading {len(bookmarks)} bookmarks")
+        self._client._log(f"Downloading {len(bookmarks)} bookmarks")
         progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work")
         for bookmark in bookmarks:
             if bookmark.item.item_type == ItemType.WORK:
                 self._client.works.sync(bookmark.item, formats=formats)
             else:
-                self._client.debug_log(f"Skipping {bookmark.item.item_type} download for {bookmark.item.title}")
+                self._client._debug_log(f"Skipping {bookmark.item.item_type} download for {bookmark.item.title}")
 
             if self._client.USE_HISTORY:
                 self._client.update_stats({"last_tracked_bookmark": bookmark.id})

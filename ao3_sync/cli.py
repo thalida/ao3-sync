@@ -129,7 +129,7 @@ def shared_options(func):
                 spinner.color = "red"
                 spinner.text = e.args[0] if is_ao3_exception else "An error occurred while logging in"
                 spinner.fail("✘")
-                api.debug_log(e)
+                api._debug_log(e)
                 return
 
         return func(ctx, **kwargs)
@@ -200,10 +200,10 @@ def bookmarks(ctx, **kwargs):
         is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
         if is_ao3_exception:
             click.secho(e.args[0], fg="red", color=True, bold=True)
-            api.debug_log(e)
+            api._debug_log(e)
         else:
             click.secho("An error occurred while syncing bookmarks", fg="red", color=True, bold=True)
-            api.debug_log(e)
+            api._debug_log(e)
 
 
 if __name__ == "__main__":
