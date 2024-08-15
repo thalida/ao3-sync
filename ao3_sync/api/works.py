@@ -5,33 +5,17 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import parsel
-from pydantic import BaseModel
 from tqdm import TqdmExperimentalWarning
 
 from ao3_sync.api import AO3Api
-from ao3_sync.enums import DownloadFormat, ItemType
+from ao3_sync.enums import DownloadFormat
+from ao3_sync.models import Work
 from ao3_sync.utils import debug_log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
-class Work(BaseModel):
-    """
-    Represents an AO3 work
-
-    Attributes:
-        item_type (ItemType): work
-        id (str): Work ID
-        title (str): Work title
-        url (str): Work URL (computed)
-    """
-
-    item_type: Literal[ItemType.WORK] = ItemType.WORK
-    id: str | None = None
-    title: str | None = None
-
-
-class WorksAPI:
+class WorksApi:
     URL_PATH: str = "/works"
 
     def __init__(self, client: AO3Api):

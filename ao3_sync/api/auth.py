@@ -7,7 +7,7 @@ from ao3_sync.api import AO3Api
 from ao3_sync.utils import debug_log
 
 
-class AuthAPI(BaseSettings):
+class AuthApi(BaseSettings):
     _is_authenticated: bool = False
 
     def __init__(self, client: AO3Api, *args, **kwargs):

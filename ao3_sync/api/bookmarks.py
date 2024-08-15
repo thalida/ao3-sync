@@ -2,35 +2,20 @@ import warnings
 from typing import Literal
 
 import parsel
-from pydantic import BaseModel, Field
 from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
 from yaspin import yaspin
 
 import ao3_sync.exceptions
 from ao3_sync.api import AO3Api
-from ao3_sync.api.series import Series
-from ao3_sync.api.works import Work
 from ao3_sync.enums import DownloadFormat, ItemType
+from ao3_sync.models import Bookmark, Series, Work
 from ao3_sync.utils import debug_error, debug_log, log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
-class Bookmark(BaseModel):
-    """
-    Represents an AO3 bookmark
-
-    Attributes:
-        id (str): Bookmark ID
-        item (Work | Series): Bookmarked item
-    """
-
-    id: str
-    item: Work | Series = Field(discriminator="item_type")
-
-
-class BookmarksAPI:
+class BookmarksApi:
     URL_PATH: str = "/bookmarks"
 
     def __init__(self, client: AO3Api):
