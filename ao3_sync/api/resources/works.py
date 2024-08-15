@@ -80,8 +80,7 @@ class WorksApi:
 
         Args:
             work (Work): Work to download
-            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
-            progress_bar (tqdm | None): Progress bar to update
+            download_url (str): URL of the work download file
         """
         parsed_path = urlparse(download_url)
         filename = os.path.basename(parsed_path.path)

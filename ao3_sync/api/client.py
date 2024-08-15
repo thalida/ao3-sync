@@ -172,7 +172,7 @@ class AO3ApiClient(BaseSettings):
             **kwargs: Keyword arguments to pass to requests
 
         Returns:
-            requests.Response: Response object
+            (requests.Response): Response object
 
         Raises:
             ao3_sync.exceptions.RateLimitError: If the rate limit is exceeded
@@ -205,7 +205,7 @@ class AO3ApiClient(BaseSettings):
             **kwargs: Keyword arguments to pass to requests
 
         Returns:
-            str | bytes: Page contents
+            (str | bytes): Page contents
 
         Raises:
             ao3_sync.exceptions.FailedRequest: If the request fails
