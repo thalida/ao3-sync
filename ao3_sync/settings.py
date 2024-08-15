@@ -24,7 +24,6 @@ class Settings(BaseSettings):
         ENV_PREFIX (str): Prefix for environment variables. Defaults to AO3_
         HOST (str): Host URL of the AO3 website. Defaults to https://archiveofourown.org
         DEBUG (bool): Enable debug mode
-        FORCE_UPDATE (bool): Force update of existing data
     """
 
     model_config = SettingsConfigDict(env_file=ENV_PATH, env_prefix=ENV_PREFIX, extra="ignore")
@@ -34,9 +33,7 @@ class Settings(BaseSettings):
     ENV_PREFIX: str = ENV_PREFIX
 
     DEBUG: bool = False
-    FORCE_UPDATE: bool = False
-
-    HOST: str = "https://archiveofourown.org"
+    USE_DEBUG_CACHE: bool = True
 
 
 settings = Settings()

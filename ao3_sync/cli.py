@@ -26,14 +26,14 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Sync Bookmarks Options",
-            "options": ["--page", "--paginate"],
+            "options": ["--start-page", "--end-page", "--query-params", "--format"],
             "panel_styles": {
                 "border_style": "white",
             },
         },
         {
             "name": "Advanced Options",
-            "options": ["--debug", "--force"],
+            "options": ["--force", "--debug", "--debug-cache"],
         },
     ],
 }
@@ -58,7 +58,20 @@ def shared_options(func):
         default=lambda: api.auth.password.get_secret_value() if api.auth.password else "",
         required=True,
     )
-    @click.option("--debug", is_flag=True, flag_value=True, default=False, help="Enable debug mode")
+    @click.option(
+        "--debug",
+        is_flag=True,
+        flag_value=True,
+        default=False,
+        help="Enable debug mode",
+    )
+    @click.option(
+        "--debug-cache/--no-debug-cache",
+        "debug_cache",
+        default=True,
+        help="Enable or disable the debug cache",
+        show_default=True,
+    )
     @click.option(
         "-f",
         "--force",
@@ -71,6 +84,7 @@ def shared_options(func):
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
         debug = kwargs.pop("debug", False)
+        debug_cache = kwargs.pop("debug_cache", True)
         force_update = kwargs.pop("force", False)
 
         username = kwargs.pop("username")
@@ -79,8 +93,10 @@ def shared_options(func):
         if debug:
             settings.DEBUG = True
 
+        settings.USE_DEBUG_CACHE = debug_cache
+
         if force_update:
-            settings.FORCE_UPDATE = True
+            api.FORCE_UPDATE = True
 
         click.secho("AO3 Sync", bold=True, color=True)
         click.secho("Press Ctrl+C to cancel \n", color=True)
@@ -88,10 +104,10 @@ def shared_options(func):
         if settings.DEBUG:
             click.secho("DEBUG MODE         ENABLED", bold=True, fg="yellow", color=True)
 
-        if settings.FORCE_UPDATE:
+        if api.FORCE_UPDATE:
             click.secho("FORCE UPDATE MODE  ENABLED", bold=True, fg="red", color=True)
 
-        if settings.DEBUG or settings.FORCE_UPDATE:
+        if settings.DEBUG or api.FORCE_UPDATE:
             click.echo()
 
         has_username = username is not None and len(username) > 0
@@ -141,22 +157,6 @@ def cli(ctx):
 
 @cli.command(
     epilog="""
-    [bold underline white]Examples[/]\n
-    \n
-    [bold]Basic Usage:[/]\n
-    ao3-sync bookmarks --username your-username --password your-password \n
-    [i]Syncs all new bookmarks, by default it will paginate and stop at the last synced bookmark. See --no-paginate and --force to override this behavior.[/] \n
-    \n
-    [bold]Advanced Usage:[/]\n
-    ao3-sync bookmarks --username your-username --password your-password --force \n
-    [i]Force update all bookmarks[/] \n
-    \n
-    ao3-sync bookmarks --username your-username --password your-password --page 2 --no-paginate --force\n
-    [i]Force sync all bookmarks on page 2 only[/] \n
-    \n
-    AO3_USERNAME=your-username AO3_PASSWORD=your-password ao3-sync bookmarks \n
-    [i]Use environment variables[/] \n
-    \n
     [bold underline white]Resources[/]\n
     \n
     [link=https://github.com]User Guides[/] \n

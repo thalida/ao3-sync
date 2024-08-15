@@ -20,8 +20,12 @@ warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
 class AO3LimiterSession(LimiterSession):
+    def __init__(self, host, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.host = host
+
     def request(self, method, url, *args, **kwargs):
-        ao3_url = urljoin(settings.HOST, url)
+        ao3_url = urljoin(self.host, url)
         return super().request(method, ao3_url, *args, **kwargs)
 
 
@@ -38,6 +42,7 @@ class Client(BaseSettings):
 
     _http_client: LimiterSession
 
+    HOST: str = "https://archiveofourown.org"
     NUM_REQUESTS_PER_SECOND: float | int = 0.2
 
     OUTPUT_FOLDER: str = "output"
@@ -45,9 +50,11 @@ class Client(BaseSettings):
     STATS_FILE: str = "stats.json"
     DEBUG_CACHE_FOLDER: str = "debug_cache"
 
+    FORCE_UPDATE: bool = False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._http_client = AO3LimiterSession(per_second=self.NUM_REQUESTS_PER_SECOND)
+        self._http_client = AO3LimiterSession(self.HOST, per_second=self.NUM_REQUESTS_PER_SECOND)
         self._http_client.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
@@ -116,7 +123,7 @@ class Client(BaseSettings):
 
         cache_key = self._get_cache_key(url, query_params)
 
-        if not settings.FORCE_UPDATE and settings.DEBUG:
+        if settings.DEBUG and settings.USE_DEBUG_CACHE:
             contents = self._get_cached_file(cache_key)
 
         if not contents:
@@ -128,7 +135,7 @@ class Client(BaseSettings):
             else:
                 contents = res.text
 
-            if settings.DEBUG:
+            if settings.DEBUG and settings.USE_DEBUG_CACHE:
                 self._save_cached_file(cache_key, contents)
 
         if not contents:

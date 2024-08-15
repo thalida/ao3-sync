@@ -8,7 +8,6 @@ from tqdm.rich import tqdm
 from yaspin import yaspin
 
 import ao3_sync.exceptions
-from ao3_sync import settings
 from ao3_sync.client import Client
 from ao3_sync.enums import DownloadFormat, ItemType
 from ao3_sync.resources.series import Series
@@ -154,7 +153,7 @@ class BookmarksAPI:
                 debug_error(f"Skipping bookmark {idx} as it has no ID")
                 continue
 
-            if not settings.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
+            if not self._client.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
                 debug_log(f"Stopping at bookmark {idx} as it is already cached")
                 break
 
