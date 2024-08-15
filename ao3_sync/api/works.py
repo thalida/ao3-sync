@@ -1,7 +1,7 @@
 import os
 import warnings
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 import parsel
@@ -10,7 +10,6 @@ from tqdm import TqdmExperimentalWarning
 from ao3_sync.api import AO3Api
 from ao3_sync.enums import DownloadFormat
 from ao3_sync.models import Work
-from ao3_sync.utils import debug_log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
@@ -44,7 +43,7 @@ class WorksApi:
             download_links (list[str]): List of download links
         """
         work_url = f"{self.URL_PATH}/{work.id}"
-        work_page = self._client.get_or_fetch(work_url)
+        work_page: Any = self._client.get_or_fetch(work_url)
 
         download_links = (
             parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
@@ -77,8 +76,8 @@ class WorksApi:
         parsed_path = urlparse(download_url)
         filename = os.path.basename(parsed_path.path)
         ext = Path(filename).suffix
-        debug_log(f"Downloading {ext} for work: {work.title}")
+        self._client.debug_log(f"Downloading {ext} for work: {work.title}")
         content = self._client._download_file(download_url)
         self._client._save_downloaded_file(filename, content)
 
-        debug_log("Downloaded work:", work.title)
+        self._client.debug_log("Downloaded work:", work.title)

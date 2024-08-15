@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
 import requests
+from loguru import logger
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from requests_ratelimiter import LimiterSession
+from rich.console import Console
 from tqdm import TqdmExperimentalWarning
 
 import ao3_sync.exceptions
-from ao3_sync import settings
-from ao3_sync.utils import debug_log
 
 if TYPE_CHECKING:
     from ao3_sync.api.auth import AuthApi
@@ -24,6 +24,9 @@ if TYPE_CHECKING:
 
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
+
+
+console = Console()
 
 
 class AO3LimiterSession(LimiterSession):
@@ -38,7 +41,6 @@ class AO3LimiterSession(LimiterSession):
 
 class AO3Api(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=settings.ENV_PATH,
         env_prefix="AO3_",
         extra="ignore",
         env_ignore_empty=True,
@@ -55,9 +57,12 @@ class AO3Api(BaseSettings):
     OUTPUT_FOLDER: str = "output"
     DOWNLOADS_FOLDER: str = "downloads"
     STATS_FILE: str = "stats.json"
-    DEBUG_CACHE_FOLDER: str = "debug_cache"
 
-    FORCE_UPDATE: bool = False
+    USE_HISTORY: bool = True
+
+    DEBUG: bool = False
+    USE_DEBUG_CACHE: bool = True
+    DEBUG_CACHE_FOLDER: str = "debug_cache"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -130,10 +135,10 @@ class AO3Api(BaseSettings):
         self.auth.login()
         res = self._http_client.get(*args, **kwargs)
         if res.status_code == 429 or res.status_code == 503 or res.status_code == 504:
-            debug_log(f"Rate limit exceeded with status code: {res.status_code}")
+            self.debug_log(f"Rate limit exceeded with status code: {res.status_code}")
             raise ao3_sync.exceptions.RateLimitError("Rate limit exceeded, wait a bit and try again")
         elif res.status_code != 200:
-            debug_log(f"Failed to download page with status code: {res.status_code}")
+            self.debug_log(f"Failed to download page with status code: {res.status_code}")
             raise ao3_sync.exceptions.FailedRequest("Failed to fetch page")
         return res
 
@@ -148,11 +153,11 @@ class AO3Api(BaseSettings):
 
         cache_key = self._get_cache_key(url, query_params)
 
-        if settings.DEBUG and settings.USE_DEBUG_CACHE:
+        if self.DEBUG and self.USE_DEBUG_CACHE:
             contents = self._get_cached_file(cache_key)
 
         if not contents:
-            debug_log(f"Fetching {url} with params {query_params}")
+            self.debug_log(f"Fetching {url} with params {query_params}")
             res = self.fetch(url, params=query_params, **kwargs)
 
             if process_response:
@@ -160,7 +165,7 @@ class AO3Api(BaseSettings):
             else:
                 contents = res.text
 
-            if settings.DEBUG and settings.USE_DEBUG_CACHE:
+            if self.DEBUG and self.USE_DEBUG_CACHE:
                 self._save_cached_file(cache_key, contents)
 
         if not contents:
@@ -198,7 +203,7 @@ class AO3Api(BaseSettings):
         return self.get_output_folder() / self.DOWNLOADS_FOLDER
 
     def _download_file(self, relative_path):
-        debug_log(f"Downloading file at {relative_path}")
+        self.debug_log(f"Downloading file at {relative_path}")
         file_content = self.get_or_fetch(relative_path, process_response=lambda res: res.content, allow_redirects=True)
 
         if not file_content:
@@ -206,13 +211,14 @@ class AO3Api(BaseSettings):
 
         return file_content
 
-    def _save_downloaded_file(self, filename, content):
+    def _save_downloaded_file(self, filename, data: str | bytes):
         download_folder = self._get_downloads_folder()
         downloaded_filepath = download_folder / filename
-        debug_log(f"Saving downloaded file: {downloaded_filepath}")
+        self.debug_log(f"Saving downloaded file: {downloaded_filepath}")
         os.makedirs(download_folder, exist_ok=True)
-        with open(downloaded_filepath, "wb") as f:
-            f.write(content)
+        mode = "wb" if isinstance(data, bytes) else "w"
+        with open(downloaded_filepath, mode) as f:
+            f.write(data)
 
     def _get_cache_key(self, url: str, query_params: dict | None = None) -> str:
         query_string = json.dumps(query_params, sort_keys=True) if query_params else ""
@@ -225,8 +231,12 @@ class AO3Api(BaseSettings):
     def _get_cached_file(self, cache_key: str):
         filepath = self._get_cache_filepath(cache_key)
         if os.path.exists(filepath):
-            with open(filepath, "r") as f:
-                return f.read()
+            try:
+                with open(filepath, "r") as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                with open(filepath, "rb") as f:
+                    return f.read()
 
     def _save_cached_file(self, cache_key: str, data: str | bytes):
         filepath = self._get_cache_filepath(cache_key)
@@ -234,3 +244,37 @@ class AO3Api(BaseSettings):
         mode = "wb" if isinstance(data, bytes) else "w"
         with open(filepath, mode) as f:
             f.write(data)
+
+    def log(self, *args, **kwargs):
+        """
+        Generic user-facing log function
+        """
+        console.print(*args, **kwargs)
+
+    def debug_log(self, *args, **kwargs):
+        """
+        Debug Mode Only: Basic log
+        """
+
+        if not self.DEBUG:
+            return
+
+        logger.opt(depth=1).debug(*args, **kwargs)
+
+    def debug_error(self, *args, **kwargs):
+        """
+        Debug Mode Only: Error log
+        """
+        if not self.DEBUG:
+            return
+
+        logger.opt(depth=1).error(*args, **kwargs)
+
+    def debug_info(self, *args, **kwargs):
+        """
+        Debug Mode Only: Info log
+        """
+        if not self.DEBUG:
+            return
+
+        logger.opt(depth=1).info(*args, **kwargs)

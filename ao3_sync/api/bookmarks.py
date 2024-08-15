@@ -1,5 +1,5 @@
 import warnings
-from typing import Literal
+from typing import Any, Literal
 
 import parsel
 from tqdm import TqdmExperimentalWarning
@@ -10,7 +10,6 @@ import ao3_sync.exceptions
 from ao3_sync.api import AO3Api
 from ao3_sync.enums import DownloadFormat, ItemType
 from ao3_sync.models import Bookmark, Series, Work
-from ao3_sync.utils import debug_error, debug_log, log
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
@@ -86,9 +85,9 @@ class BookmarksApi:
         num_pages_to_download = end_page - start_page + 1
 
         if num_pages_to_download > 1:
-            log(f"Downloading {num_pages_to_download} pages, from page {start_page} to {end_page}")
+            self._client.log(f"Downloading {num_pages_to_download} pages, from page {start_page} to {end_page}")
         else:
-            log(f"Downloading page {start_page} of {num_pages}")
+            self._client.log(f"Downloading page {start_page} of {num_pages}")
 
         bookmark_list = []
         for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages", unit="pg"):
@@ -125,7 +124,7 @@ class BookmarksApi:
         stats = self._client.get_stats()
         last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
 
-        bookmarks_page = self._client.get_or_fetch(
+        bookmarks_page: Any = self._client.get_or_fetch(
             self.URL_PATH,
             query_params=query_params,
         )
@@ -135,11 +134,11 @@ class BookmarksApi:
         for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
             bookmark_id = bookmark_el.css("::attr(id)").get()
             if not bookmark_id:
-                debug_error(f"Skipping bookmark {idx} as it has no ID")
+                self._client.debug_error(f"Skipping bookmark {idx} as it has no ID")
                 continue
 
-            if not self._client.FORCE_UPDATE and bookmark_id == last_tracked_bookmark:
-                debug_log(f"Stopping at bookmark {idx} as it is already cached")
+            if self._client.USE_HISTORY and bookmark_id == last_tracked_bookmark:
+                self._client.debug_log(f"Stopping at bookmark {idx} as it is already cached")
                 break
 
             title_raw = bookmark_el.css("h4.heading a:not(rel)")
@@ -147,7 +146,7 @@ class BookmarksApi:
             item_href = title_raw.css("::attr(href)").get()
 
             if not item_href:
-                debug_error(f"Skipping bookmark {idx} as it has no item_href")
+                self._client.debug_error(f"Skipping bookmark {idx} as it has no item_href")
                 continue
 
             _, item_type, item_id = item_href.split("/")
@@ -164,7 +163,7 @@ class BookmarksApi:
                         title=item_title,
                     )
                 case _:
-                    debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
+                    self._client.debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
                     continue
 
             bookmark = Bookmark(
@@ -182,7 +181,7 @@ class BookmarksApi:
         Returns:
             num_pages (int): Number of bookmark pages
         """
-        first_page = self._client.get_or_fetch(
+        first_page: Any = self._client.get_or_fetch(
             self.URL_PATH,
             query_params={"page": 1, "user_id": self._client.auth.username, "sort_column": "created_at"},
         )
@@ -209,20 +208,20 @@ class BookmarksApi:
         """
 
         if not bookmarks or len(bookmarks) == 0:
-            log("No bookmarks to download")
+            self._client.log("No bookmarks to download")
             return
 
-        log(f"Downloading {len(bookmarks)} bookmarks")
+        self._client.log(f"Downloading {len(bookmarks)} bookmarks")
         progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work")
         for bookmark in bookmarks:
-            if bookmark.item.item_type == ItemType.SERIES:
-                debug_log("Skipping series bookmark", bookmark.item.title)
-                self._client.update_stats({"last_tracked_bookmark": bookmark.id})
-                progress_bar.update(1)
-                continue
+            if bookmark.item.item_type == ItemType.WORK:
+                self._client.works.sync(bookmark.item, formats=formats)
+            else:
+                self._client.debug_log(f"Skipping {bookmark.item.item_type} download for {bookmark.item.title}")
 
-            self._client.works.sync(bookmark.item, formats=formats)
-            self._client.update_stats({"last_tracked_bookmark": bookmark.id})
+            if self._client.USE_HISTORY:
+                self._client.update_stats({"last_tracked_bookmark": bookmark.id})
+
             progress_bar.update(1)
 
         progress_bar.close()

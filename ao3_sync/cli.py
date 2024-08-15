@@ -5,10 +5,8 @@ from pydantic import SecretStr
 from yaspin import yaspin
 
 import ao3_sync.exceptions
-from ao3_sync import settings
 from ao3_sync.api import AO3Api
 from ao3_sync.enums import DownloadFormat
-from ao3_sync.utils import debug_log
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -33,7 +31,7 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Advanced Options",
-            "options": ["--force", "--debug", "--debug-cache"],
+            "options": ["--force", "--debug", "--debug-cache", "--history"],
         },
     ],
 }
@@ -59,55 +57,49 @@ def shared_options(func):
         required=True,
     )
     @click.option(
-        "--debug",
-        is_flag=True,
-        flag_value=True,
-        default=False,
+        "--debug/--no-debug",
+        "debug",
+        default=api.DEBUG,
         help="Enable debug mode",
     )
     @click.option(
         "--debug-cache/--no-debug-cache",
-        "debug_cache",
-        default=True,
+        "use_debug_cache",
+        default=api.USE_DEBUG_CACHE,
         help="Enable or disable the debug cache",
-        show_default=True,
     )
     @click.option(
-        "-f",
-        "--force",
-        "force",
-        is_flag=True,
-        flag_value=True,
-        default=False,
-        help="Enable force update",
+        "--history/--no-history",
+        "use_history",
+        default=api.USE_HISTORY,
+        help="Enable or disable history",
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
-        debug = kwargs.pop("debug", False)
-        debug_cache = kwargs.pop("debug_cache", True)
-        force_update = kwargs.pop("force", False)
+        debug = kwargs.pop("debug", api.DEBUG)
+        use_debug_cache = kwargs.pop("use_debug_cache", api.USE_DEBUG_CACHE)
+        use_history = kwargs.pop("use_history", api.USE_HISTORY)
 
         username = kwargs.pop("username")
         password = kwargs.pop("password")
 
-        if debug:
-            settings.DEBUG = True
-
-        settings.USE_DEBUG_CACHE = debug_cache
-
-        if force_update:
-            api.FORCE_UPDATE = True
+        api.DEBUG = debug
+        api.USE_DEBUG_CACHE = use_debug_cache
+        api.USE_HISTORY = use_history
 
         click.secho("AO3 Sync", bold=True, color=True)
         click.secho("Press Ctrl+C to cancel \n", color=True)
 
-        if settings.DEBUG:
+        if api.DEBUG:
             click.secho("DEBUG MODE         ENABLED", bold=True, fg="yellow", color=True)
 
-        if api.FORCE_UPDATE:
-            click.secho("FORCE UPDATE MODE  ENABLED", bold=True, fg="red", color=True)
+        if api.DEBUG and not api.USE_DEBUG_CACHE:
+            click.secho("DEBUG CACHE        DISABLED", bold=True, fg="cyan", color=True)
 
-        if settings.DEBUG or api.FORCE_UPDATE:
+        if not api.USE_HISTORY:
+            click.secho("HISTORY            DISABLED", bold=True, fg="cyan", color=True)
+
+        if api.DEBUG or not api.USE_HISTORY:
             click.echo()
 
         has_username = username is not None and len(username) > 0
@@ -137,7 +129,7 @@ def shared_options(func):
                 spinner.color = "red"
                 spinner.text = e.args[0] if is_ao3_exception else "An error occurred while logging in"
                 spinner.fail("✘")
-                debug_log(e)
+                api.debug_log(e)
                 return
 
         return func(ctx, **kwargs)
@@ -208,10 +200,10 @@ def bookmarks(ctx, **kwargs):
         is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
         if is_ao3_exception:
             click.secho(e.args[0], fg="red", color=True, bold=True)
-            debug_log(e)
+            api.debug_log(e)
         else:
             click.secho("An error occurred while syncing bookmarks", fg="red", color=True, bold=True)
-            debug_log(e)
+            api.debug_log(e)
 
 
 if __name__ == "__main__":

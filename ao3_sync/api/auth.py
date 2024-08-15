@@ -4,7 +4,6 @@ from pydantic_settings import BaseSettings
 
 import ao3_sync.exceptions
 from ao3_sync.api import AO3Api
-from ao3_sync.utils import debug_log
 
 
 class AuthApi(BaseSettings):
@@ -34,7 +33,7 @@ class AuthApi(BaseSettings):
             username (str): AO3 username
             password (str): AO3 password
         """
-        debug_log(f"Updating AO3Session with username: {username} and password: {password}")
+        self._client.debug_log(f"Updating AO3Session with username: {username} and password: {password}")
         self._client.username = username
         self._client.password = SecretStr(password) if password else None
         self._is_authenticated = False
@@ -79,4 +78,4 @@ class AuthApi(BaseSettings):
             )
 
         self._is_authenticated = True
-        debug_log("Successfully logged in")
+        self._client.debug_log("Successfully logged in")
