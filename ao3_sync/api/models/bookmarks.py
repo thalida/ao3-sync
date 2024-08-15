@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
-from ao3_sync.models.series import Series
-from ao3_sync.models.works import Work
+from ao3_sync.api.models.series import Series
+from ao3_sync.api.models.works import Work
 
 
 class Bookmark(BaseModel):
