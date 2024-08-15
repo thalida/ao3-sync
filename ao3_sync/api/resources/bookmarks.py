@@ -6,10 +6,10 @@ from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
 from yaspin import yaspin
 
-import ao3_sync.exceptions
-from ao3_sync.api import AO3Api
-from ao3_sync.enums import DownloadFormat, ItemType
-from ao3_sync.models import Bookmark, Series, Work
+import ao3_sync.api.exceptions
+from ao3_sync.api.client import AO3ApiClient
+from ao3_sync.api.enums import DownloadFormat, ItemType
+from ao3_sync.api.models import Bookmark, Series, Work
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
@@ -19,7 +19,7 @@ class BookmarksApi:
     API for handling AO3 bookmarks
 
     Args:
-        client (AO3Api): AO3Api instance
+        client (AO3ApiClient): AO3ApiClient instance
 
     Attributes:
         URL_PATH (str): URL path for bookmarks
@@ -27,7 +27,7 @@ class BookmarksApi:
 
     URL_PATH: str = "/bookmarks"
 
-    def __init__(self, client: AO3Api):
+    def __init__(self, client: AO3ApiClient):
         self._client = client
 
     def sync(
@@ -128,7 +128,7 @@ class BookmarksApi:
         query_params["user_id"] = self._client.auth.username
 
         if query_params["page"] < 1:
-            raise ao3_sync.exceptions.FailedRequest("Page number must be greater than 0")
+            raise ao3_sync.api.exceptions.FailedRequest("Page number must be greater than 0")
 
         stats = self._client.get_stats()
         last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None

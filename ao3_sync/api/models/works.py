@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from ao3_sync.enums import ItemType
+from ao3_sync.api.enums import ItemType
 
 
 class Work(BaseModel):

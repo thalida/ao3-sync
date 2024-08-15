@@ -7,9 +7,9 @@ from urllib.parse import urlparse
 import parsel
 from tqdm import TqdmExperimentalWarning
 
-from ao3_sync.api import AO3Api
-from ao3_sync.enums import DownloadFormat
-from ao3_sync.models import Work
+from ao3_sync.api.client import AO3ApiClient
+from ao3_sync.api.enums import DownloadFormat
+from ao3_sync.api.models import Work
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
@@ -19,7 +19,7 @@ class WorksApi:
     API for handling AO3 works
 
     Args:
-        client (AO3Api): AO3Api instance
+        client (AO3ApiClient): AO3ApiClient instance
 
     Attributes:
         URL_PATH (str): URL path for works
@@ -27,7 +27,7 @@ class WorksApi:
 
     URL_PATH: str = "/works"
 
-    def __init__(self, client: AO3Api):
+    def __init__(self, client: AO3ApiClient):
         self._client = client
 
     def sync(self, work: Work, formats: list[DownloadFormat] | Literal["all"] = "all"):

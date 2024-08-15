@@ -4,13 +4,13 @@ import rich_click as click
 from pydantic import SecretStr
 from yaspin import yaspin
 
-import ao3_sync.exceptions
-from ao3_sync.api import AO3Api
-from ao3_sync.enums import DownloadFormat
+import ao3_sync.api.exceptions
+from ao3_sync.api import AO3ApiClient
+from ao3_sync.api.enums import DownloadFormat
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-api = AO3Api()
+api = AO3ApiClient()
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.OPTION_GROUPS = {
@@ -125,7 +125,7 @@ def shared_options(func):
                 spinner.text = "Successfully logged in!"
                 spinner.ok("✔")
             except Exception as e:
-                is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
+                is_ao3_exception = isinstance(e, ao3_sync.api.exceptions.AO3Exception)
                 spinner.color = "red"
                 spinner.text = e.args[0] if is_ao3_exception else "An error occurred while logging in"
                 spinner.fail("✘")
@@ -197,7 +197,7 @@ def bookmarks(ctx, **kwargs):
         api.bookmarks.sync(**kwargs)
         click.secho("DONE!", bold=True, fg="green", color=True)
     except Exception as e:
-        is_ao3_exception = isinstance(e, ao3_sync.exceptions.AO3Exception)
+        is_ao3_exception = isinstance(e, ao3_sync.api.exceptions.AO3Exception)
         if is_ao3_exception:
             click.secho(e.args[0], fg="red", color=True, bold=True)
             api._debug_log(e)

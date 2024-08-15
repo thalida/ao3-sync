@@ -2,8 +2,8 @@ import parsel
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
-import ao3_sync.exceptions
-from ao3_sync.api import AO3Api
+import ao3_sync.api.exceptions
+from ao3_sync.api.client import AO3ApiClient
 
 
 class AuthApi(BaseSettings):
@@ -11,12 +11,12 @@ class AuthApi(BaseSettings):
     API for handling AO3 authentication
 
     Args:
-        client (AO3Api): AO3Api instance
+        client (AO3ApiClient): AO3ApiClient instance
     """
 
     _is_authenticated: bool = False
 
-    def __init__(self, client: AO3Api, *args, **kwargs):
+    def __init__(self, client: AO3ApiClient, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._client = client
 
@@ -71,7 +71,7 @@ class AuthApi(BaseSettings):
             return
 
         if not self.username or not self.password:
-            raise ao3_sync.exceptions.LoginError("Username and password must be set")
+            raise ao3_sync.api.exceptions.LoginError("Username and password must be set")
 
         login_page = self._client._http_client.get("/users/login")
         authenticity_token = (
@@ -90,7 +90,7 @@ class AuthApi(BaseSettings):
         )
 
         if "auth_error" in login_res.text:
-            raise ao3_sync.exceptions.LoginError(
+            raise ao3_sync.api.exceptions.LoginError(
                 f"Error logging into AO3 with username {self.username} and password {self.password}"
             )
 
