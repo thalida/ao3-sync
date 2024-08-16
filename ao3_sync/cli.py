@@ -31,7 +31,15 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Advanced Options",
-            "options": ["--force", "--debug", "--debug-cache", "--history"],
+            "options": ["--downloads-dir", "--requests-per-second", "--history", "--history-file"],
+        },
+        {
+            "name": "Debug Options",
+            "options": [
+                "--debug",
+                "--debug-cache",
+                "--debug-cache-dir",
+            ],
         },
     ],
 }
@@ -57,33 +65,71 @@ def shared_options(func):
         required=True,
     )
     @click.option(
+        "--downloads-dir",
+        "downloads_dir",
+        type=click.Path(file_okay=False, writable=True),
+        default=base_api.downloads_dir,
+        show_default=True,
+        help="Directory to save downloads",
+    )
+    @click.option(
+        "--requests-per-second",
+        "num_requests_per_second",
+        type=float,
+        default=base_api.num_requests_per_second,
+        show_default=True,
+        help="Number of requests per second",
+    )
+    @click.option(
+        "--history/--no-history",
+        "use_history",
+        default=base_api.use_history,
+        show_default=True,
+        help="Enable or disable history",
+    )
+    @click.option(
+        "--history-file",
+        "history_filepath",
+        type=click.Path(file_okay=True, writable=True),
+        default=base_api.history_filepath,
+        show_default=True,
+        help="Path to history file",
+    )
+    @click.option(
         "--debug/--no-debug",
         "debug",
         default=base_api.debug,
+        show_default=True,
         help="Enable debug mode",
     )
     @click.option(
         "--debug-cache/--no-debug-cache",
         "use_debug_cache",
         default=base_api.use_debug_cache,
+        show_default=True,
         help="Enable or disable the debug cache",
     )
     @click.option(
-        "--history/--no-history",
-        "use_history",
-        default=base_api.use_history,
-        help="Enable or disable history",
-    )
-    @click.option(
-        "--requests-per-second",
-        "num_requests_per_second",
-        type=int,
-        default=base_api.num_requests_per_second,
-        help="Number of requests per second",
+        "--debug-cache-dir",
+        "debug_cache_dir",
+        type=click.Path(file_okay=False, writable=True),
+        default=base_api.debug_cache_dir,
+        show_default=True,
+        help="Directory to save debug cache",
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
-        api = AO3ApiClient(**kwargs)
+        api = AO3ApiClient(
+            username=kwargs.pop("username"),
+            password=kwargs.pop("password"),
+            downloads_dir=kwargs.pop("downloads_dir"),
+            num_requests_per_second=kwargs.pop("num_requests_per_second"),
+            use_history=kwargs.pop("use_history"),
+            history_filepath=kwargs.pop("history_filepath"),
+            debug=kwargs.pop("debug"),
+            use_debug_cache=kwargs.pop("use_debug_cache"),
+            debug_cache_dir=kwargs.pop("debug_cache_dir"),
+        )
 
         username = api.auth.username
         password = api.auth.password.get_secret_value() if api.auth.password else None
@@ -146,7 +192,7 @@ def shared_options(func):
                 api._debug_log(e)
                 return
 
-        return func(ctx, api)
+        return func(ctx, api, **kwargs)
 
     return wrapper
 
@@ -191,6 +237,7 @@ def cli(ctx):
     "query_params",
     type=str,
     default=None,
+    show_default=True,
     help="Query parameters",
 )
 @click.option(
@@ -198,6 +245,7 @@ def cli(ctx):
     "formats",
     type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
     default=["all"],
+    show_default=True,
     help="Formats to download",
     multiple=True,
 )

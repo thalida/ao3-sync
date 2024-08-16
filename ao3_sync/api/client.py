@@ -4,7 +4,7 @@ import os
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from loguru import logger
@@ -64,11 +64,8 @@ class AO3ApiClient(BaseSettings):
     username: str | None = None
     password: SecretStr | None = None
 
-    _http_client: LimiterSession
-
-    num_requests_per_second: float | int = 0.2
-
     downloads_dir: str = "output/downloads/"
+    num_requests_per_second: float | int = 0.2
 
     use_history: bool = True
     history_filepath: str = "output/history.json"
@@ -76,6 +73,8 @@ class AO3ApiClient(BaseSettings):
     debug: bool = False
     use_debug_cache: bool = True
     debug_cache_dir: str = "output/debug_cache"
+
+    _http_client: LimiterSession
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -295,8 +294,11 @@ class AO3ApiClient(BaseSettings):
         Returns:
             (str): File contents
         """
+
+        parsed_path = urlparse(relative_path)
+        filename = os.path.basename(parsed_path.path)
         file_content = self.fetch_file(relative_path)
-        self.save_file(relative_path, file_content)
+        self.save_file(filename, file_content)
 
     def fetch_file(self, relative_path):
         self._debug_log(f"Downloading file at {relative_path}")

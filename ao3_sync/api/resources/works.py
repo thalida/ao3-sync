@@ -83,9 +83,6 @@ class WorksApi:
             work_id (str): Work ID to download
             download_url (str): URL of the work download file
         """
-        parsed_path = urlparse(download_url)
-        filename = os.path.basename(parsed_path.path)
-        ext = Path(filename).suffix
-        self._client._debug_log(f"Downloading {ext} for work: {work_id}")
+        self._client._debug_log(f"Downloading {download_url} for work: {work_id}")
         self._client.download_file(download_url)
         self._client._debug_log("Downloaded work:", work_id)
