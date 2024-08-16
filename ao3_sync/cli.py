@@ -12,9 +12,9 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 base_api = AO3ApiClient()
 
-click.rich_click.USE_RICH_MARKUP = True
-click.rich_click.OPTION_GROUPS = {
-    "ao3-sync bookmarks": [
+
+def create_option_group(options):
+    return [
         {
             "name": ":lock: Authentication",
             "options": ["--username", "--password"],
@@ -22,13 +22,7 @@ click.rich_click.OPTION_GROUPS = {
                 "border_style": "yellow",
             },
         },
-        {
-            "name": "Sync Bookmarks Options",
-            "options": ["--start-page", "--end-page", "--query-params", "--format"],
-            "panel_styles": {
-                "border_style": "white",
-            },
-        },
+        options,
         {
             "name": "Advanced Options",
             "options": ["--downloads-dir", "--requests-per-second", "--history", "--history-file"],
@@ -41,11 +35,52 @@ click.rich_click.OPTION_GROUPS = {
                 "--debug-cache-dir",
             ],
         },
-    ],
+    ]
+
+
+# https://archiveofourown.org/works/18462467
+
+click.rich_click.USE_RICH_MARKUP = True
+click.rich_click.OPTION_GROUPS = {
+    "ao3-sync bookmarks": create_option_group(
+        {
+            "name": "Sync Bookmarks Options",
+            "options": ["--start-page", "--end-page", "--query-params", "--format"],
+            "panel_styles": {
+                "border_style": "white",
+            },
+        }
+    ),
+    "ao3-sync series": create_option_group(
+        {
+            "name": "Sync Series Options",
+            "options": ["--series", "--format"],
+            "panel_styles": {
+                "border_style": "white",
+            },
+        }
+    ),
+    "ao3-sync work": create_option_group(
+        {
+            "name": "Sync Work Options",
+            "options": ["--work", "--format"],
+            "panel_styles": {
+                "border_style": "white",
+            },
+        }
+    ),
 }
 
 
-def shared_options(func):
+def api_command(func):
+    @cli.command(
+        epilog="""
+        [bold underline white]Resources[/]\n
+        \n
+        [link=https://github.com]User Guides[/] \n
+        [link=https://github.com]Developer Documentation[/] \n
+        """,
+    )
     @click.pass_context
     @click.option(
         "-u",
@@ -207,15 +242,7 @@ def cli(ctx):
     return
 
 
-@cli.command(
-    epilog="""
-    [bold underline white]Resources[/]\n
-    \n
-    [link=https://github.com]User Guides[/] \n
-    [link=https://github.com]Developer Documentation[/] \n
-    """,
-)
-@shared_options
+@api_command
 @click.option(
     "--start-page",
     "start_page",
@@ -265,6 +292,76 @@ def bookmarks(ctx, api, **kwargs):
             api._debug_log(e)
         else:
             click.secho("An error occurred while syncing bookmarks", fg="red", color=True, bold=True)
+            api._debug_log(e)
+
+
+@api_command
+@click.option(
+    "--work",
+    "work_id",
+    type=str,
+    required=True,
+)
+@click.option(
+    "--format",
+    "formats",
+    type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
+    default=["all"],
+    show_default=True,
+    help="Formats to download",
+    multiple=True,
+)
+def work(ctx, api, **kwargs):
+    """
+    Sync AO3 Work
+    """
+    click.secho("\nSyncing AO3 Work", bold=True, color=True)
+
+    try:
+        api.works.sync(**kwargs)
+        click.secho("DONE!", bold=True, fg="green", color=True)
+    except Exception as e:
+        is_ao3_exception = isinstance(e, ao3_sync.api.exceptions.AO3Exception)
+        if is_ao3_exception:
+            click.secho(e.args[0], fg="red", color=True, bold=True)
+            api._debug_log(e)
+        else:
+            click.secho("An error occurred while syncing work", fg="red", color=True, bold=True)
+            api._debug_log(e)
+
+
+@api_command
+@click.option(
+    "--series",
+    "series_id",
+    type=str,
+    required=True,
+)
+@click.option(
+    "--format",
+    "formats",
+    type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
+    default=["all"],
+    show_default=True,
+    help="Formats to download",
+    multiple=True,
+)
+def series(ctx, api, **kwargs):
+    """
+    Sync AO3 Work
+    """
+    click.secho("\nSyncing AO3 Series", bold=True, color=True)
+
+    try:
+        api.series.sync(**kwargs)
+        click.secho("DONE!", bold=True, fg="green", color=True)
+    except Exception as e:
+        is_ao3_exception = isinstance(e, ao3_sync.api.exceptions.AO3Exception)
+        if is_ao3_exception:
+            click.secho(e.args[0], fg="red", color=True, bold=True)
+            api._debug_log(e)
+        else:
+            click.secho("An error occurred while syncing work", fg="red", color=True, bold=True)
             api._debug_log(e)
 
 
