@@ -10,7 +10,7 @@ from ao3_sync.api.enums import DownloadFormat
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-api = AO3ApiClient()
+base_api = AO3ApiClient()
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.OPTION_GROUPS = {
@@ -44,7 +44,7 @@ def shared_options(func):
         "--username",
         "username",
         help="AO3 Username",
-        default=lambda: api.auth.username if api.auth.username else "",
+        default=lambda: base_api.auth.username if base_api.auth.username else "",
         required=True,
     )
     @click.option(
@@ -53,39 +53,40 @@ def shared_options(func):
         "password",
         help="AO3 Password",
         hide_input=True,
-        default=lambda: api.auth.password.get_secret_value() if api.auth.password else "",
+        default=lambda: base_api.auth.password.get_secret_value() if base_api.auth.password else "",
         required=True,
     )
     @click.option(
         "--debug/--no-debug",
         "debug",
-        default=api.debug,
+        default=base_api.debug,
         help="Enable debug mode",
     )
     @click.option(
         "--debug-cache/--no-debug-cache",
         "use_debug_cache",
-        default=api.use_debug_cache,
+        default=base_api.use_debug_cache,
         help="Enable or disable the debug cache",
     )
     @click.option(
         "--history/--no-history",
         "use_history",
-        default=api.use_history,
+        default=base_api.use_history,
         help="Enable or disable history",
+    )
+    @click.option(
+        "--requests-per-second",
+        "num_requests_per_second",
+        type=int,
+        default=base_api.num_requests_per_second,
+        help="Number of requests per second",
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
-        debug = kwargs.pop("debug", api.debug)
-        use_debug_cache = kwargs.pop("use_debug_cache", api.use_debug_cache)
-        use_history = kwargs.pop("use_history", api.use_history)
+        api = AO3ApiClient(**kwargs)
 
-        username = kwargs.pop("username")
-        password = kwargs.pop("password")
-
-        api.debug = debug
-        api.use_debug_cache = use_debug_cache
-        api.use_history = use_history
+        username = api.auth.username
+        password = api.auth.password.get_secret_value() if api.auth.password else None
 
         click.secho("AO3 Sync", bold=True, color=True)
         click.secho("Press Ctrl+C to cancel \n", color=True)
@@ -145,7 +146,7 @@ def shared_options(func):
                 api._debug_log(e)
                 return
 
-        return func(ctx, **kwargs)
+        return func(ctx, api)
 
     return wrapper
 
@@ -200,7 +201,7 @@ def cli(ctx):
     help="Formats to download",
     multiple=True,
 )
-def bookmarks(ctx, **kwargs):
+def bookmarks(ctx, api, **kwargs):
     """
     Sync AO3 Bookmarks
     """

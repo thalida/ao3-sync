@@ -87,7 +87,5 @@ class WorksApi:
         filename = os.path.basename(parsed_path.path)
         ext = Path(filename).suffix
         self._client._debug_log(f"Downloading {ext} for work: {work_id}")
-        content = self._client._download_file(download_url)
-        self._client._save_downloaded_file(filename, content)
-
+        self._client.download_file(download_url)
         self._client._debug_log("Downloaded work:", work_id)

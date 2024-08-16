@@ -30,12 +30,8 @@ console = Console()
 
 
 class AO3LimiterSession(LimiterSession):
-    def __init__(self, host, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.host = host
-
     def request(self, method, url, *args, **kwargs):
-        ao3_url = urljoin(self.host, url)
+        ao3_url = urljoin("https://archiveofourown.org", url)
         return super().request(method, ao3_url, *args, **kwargs)
 
 
@@ -70,23 +66,21 @@ class AO3ApiClient(BaseSettings):
 
     _http_client: LimiterSession
 
-    host: str = "https://archiveofourown.org"
     num_requests_per_second: float | int = 0.2
 
-    output_dir: str = "output"
-    downloads_dir: str = "downloads"
+    downloads_dir: str = "output/downloads/"
 
     use_history: bool = True
-    history_filename: str = "history.json"
+    history_filepath: str = "output/history.json"
 
     debug: bool = False
     use_debug_cache: bool = True
-    debug_cache_dir: str = "debug_cache"
+    debug_cache_dir: str = "output/debug_cache"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._http_client = AO3LimiterSession(self.host, per_second=self.num_requests_per_second)
+        self._http_client = AO3LimiterSession(per_second=self.num_requests_per_second)
         self._http_client.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
@@ -215,11 +209,11 @@ class AO3ApiClient(BaseSettings):
 
         contents = None
 
-        cache_key = self._get_cache_key(url, query_params)
+        cache_key = self._get_debug_cache_key(url, query_params)
 
         if self.debug and self.use_debug_cache:
             self._debug_log(f"Cache key for {url} is {cache_key}")
-            contents = self._get_cached_file(cache_key)
+            contents = self._get_debug_cache_file(cache_key)
 
         if not contents:
             self._debug_log(f"Fetching {url} with params {query_params}")
@@ -231,22 +225,12 @@ class AO3ApiClient(BaseSettings):
                 contents = res.text
 
             if self.debug and self.use_debug_cache:
-                self._save_cached_file(cache_key, contents)
+                self._save_debug_cache_file(cache_key, contents)
 
         if not contents:
             raise ao3_sync.api.exceptions.FailedRequest("Failed to fetch page")
 
         return contents
-
-    def get_output_dir(self):
-        """
-        Get the output folder
-
-        Returns:
-            (Path): Output folder
-        """
-
-        return Path(self.output_dir)
 
     def get_history_filepath(self) -> Path:
         """
@@ -256,7 +240,7 @@ class AO3ApiClient(BaseSettings):
             (Path): Stats file path
         """
 
-        return self.get_output_dir() / self.history_filename
+        return Path(self.history_filepath)
 
     def get_history(
         self,
@@ -299,9 +283,22 @@ class AO3ApiClient(BaseSettings):
         Returns:
             (Path): Downloads folder
         """
-        return self.get_output_dir() / self.downloads_dir
+        return Path(self.downloads_dir)
 
-    def _download_file(self, relative_path):
+    def download_file(self, relative_path):
+        """
+        Download a file from AO3
+
+        Args:
+            relative_path (str): Relative path to the file
+
+        Returns:
+            (str): File contents
+        """
+        file_content = self.fetch_file(relative_path)
+        self.save_file(relative_path, file_content)
+
+    def fetch_file(self, relative_path):
         self._debug_log(f"Downloading file at {relative_path}")
         file_content = self.get_or_fetch(relative_path, process_response=lambda res: res.content, allow_redirects=True)
 
@@ -310,7 +307,7 @@ class AO3ApiClient(BaseSettings):
 
         return file_content
 
-    def _save_downloaded_file(self, filename, data: str | bytes):
+    def save_file(self, filename, data: str | bytes):
         download_folder = self.get_downloads_dir()
         downloaded_filepath = download_folder / filename
         self._debug_log(f"Saving downloaded file: {downloaded_filepath}")
@@ -319,16 +316,25 @@ class AO3ApiClient(BaseSettings):
         with open(downloaded_filepath, mode) as f:
             f.write(data)
 
-    def _get_cache_key(self, url: str, query_params: dict | None = None) -> str:
+    def get_debug_cache_dir(self):
+        """
+        Get the debug cache folder
+
+        Returns:
+            (Path): Debug cache folder
+        """
+        return Path(self.debug_cache_dir)
+
+    def _get_debug_cache_key(self, url: str, query_params: dict | None = None) -> str:
         query_string = json.dumps(query_params, sort_keys=True) if query_params else ""
         source_str = f"{url}{query_string}"
         return hashlib.sha1(source_str.encode()).hexdigest()
 
-    def _get_cache_filepath(self, cache_key: str) -> Path:
-        return self.get_output_dir() / self.debug_cache_dir / f"{cache_key}"
+    def _get_debug_cache_filepath(self, cache_key: str) -> Path:
+        return self.get_debug_cache_dir() / f"{cache_key}"
 
-    def _get_cached_file(self, cache_key: str):
-        filepath = self._get_cache_filepath(cache_key)
+    def _get_debug_cache_file(self, cache_key: str):
+        filepath = self._get_debug_cache_filepath(cache_key)
         if os.path.exists(filepath):
             try:
                 with open(filepath, "r") as f:
@@ -337,8 +343,8 @@ class AO3ApiClient(BaseSettings):
                 with open(filepath, "rb") as f:
                     return f.read()
 
-    def _save_cached_file(self, cache_key: str, data: str | bytes):
-        filepath = self._get_cache_filepath(cache_key)
+    def _save_debug_cache_file(self, cache_key: str, data: str | bytes):
+        filepath = self._get_debug_cache_filepath(cache_key)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         mode = "wb" if isinstance(data, bytes) else "w"
         with open(filepath, mode) as f:
