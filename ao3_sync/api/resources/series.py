@@ -1,3 +1,10 @@
+from typing import Any, Literal
+
+import parsel
+
+from ao3_sync.api.enums import DownloadFormat
+
+
 class SeriesApi:
     """
     API for handling AO3 series
@@ -13,3 +20,39 @@ class SeriesApi:
 
     def __init__(self, client):
         self._client = client
+
+    def sync(self, series_id: str, formats: list[DownloadFormat] | Literal["all"] = "all"):
+        """
+        Syncs all the works in a series from AO3.
+
+        Args:
+            series (Series): Series to sync
+        """
+
+        works = self.fetch_works(series_id)
+        for work_id in works:
+            self._client.works.sync(work_id, formats=formats)
+
+    def fetch_works(self, series_id: str) -> list[str]:
+        """
+        Fetches a series from AO3.
+
+        Returns:
+            series (Series): AO3 series
+        """
+
+        series_page: Any = self._client.get_or_fetch(f"{self.URL_PATH}/{series_id}")
+        works_element_list = parsel.Selector(series_page).css("ul.series.work > li")
+
+        works_list: list[str] = []
+        for idx, work_el in enumerate(works_element_list, start=1):
+            work_id = work_el.css("::attr(id)").get()
+            if not work_id:
+                self._client._debug_error(f"Skipping work {idx} as it has no ID")
+                continue
+
+            work_id = work_id.split("_")[-1]
+
+            works_list.append(work_id)
+
+        return works_list

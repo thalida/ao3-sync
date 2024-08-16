@@ -84,6 +84,7 @@ class AO3ApiClient(BaseSettings):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self._http_client = AO3LimiterSession(self.HOST, per_second=self.NUM_REQUESTS_PER_SECOND)
         self._http_client.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
@@ -216,6 +217,7 @@ class AO3ApiClient(BaseSettings):
         cache_key = self._get_cache_key(url, query_params)
 
         if self.DEBUG and self.USE_DEBUG_CACHE:
+            self._debug_log(f"Cache key for {url} is {cache_key}")
             contents = self._get_cached_file(cache_key)
 
         if not contents:

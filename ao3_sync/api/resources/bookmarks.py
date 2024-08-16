@@ -9,7 +9,7 @@ from yaspin import yaspin
 import ao3_sync.api.exceptions
 from ao3_sync.api.client import AO3ApiClient
 from ao3_sync.api.enums import DownloadFormat, ItemType
-from ao3_sync.api.models import Bookmark, Series, Work
+from ao3_sync.api.models import Bookmark
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
@@ -139,7 +139,7 @@ class BookmarksApi:
         )
 
         bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
-        bookmark_list = []
+        bookmark_list: list[Bookmark] = []
         for idx, bookmark_el in enumerate(bookmark_element_list, start=1):
             bookmark_id = bookmark_el.css("::attr(id)").get()
             if not bookmark_id:
@@ -151,34 +151,25 @@ class BookmarksApi:
                 break
 
             title_raw = bookmark_el.css("h4.heading a:not(rel)")
-            item_title = title_raw.css("::text").get()
             item_href = title_raw.css("::attr(href)").get()
 
             if not item_href:
                 self._client._debug_error(f"Skipping bookmark {idx} as it has no item_href")
                 continue
 
-            _, item_type, item_id = item_href.split("/")
+            _, item_path, item_id = item_href.split("/")
 
-            match f"/{item_type}":
+            item_type = None
+            match f"/{item_path}":
                 case self._client.works.URL_PATH:
-                    item = Work(
-                        id=item_id,
-                        title=item_title,
-                    )
+                    item_type = ItemType.WORK
                 case self._client.series.URL_PATH:
-                    item = Series(
-                        id=item_id,
-                        title=item_title,
-                    )
+                    item_type = ItemType.SERIES
                 case _:
-                    self._client._debug_error(f"Skipping bookmark {idx} as it has an unknown item_type: {item_type}")
+                    self._client._debug_error(f"Skipping bookmark {idx} as it has an unknown type: {item_path}")
                     continue
 
-            bookmark = Bookmark(
-                id=bookmark_id,
-                item=item,
-            )
+            bookmark = Bookmark(id=bookmark_id, item_type=item_type, item_id=item_id)
             bookmark_list.append(bookmark)
 
         return bookmark_list
@@ -223,10 +214,10 @@ class BookmarksApi:
         self._client._log(f"Downloading {len(bookmarks)} bookmarks")
         progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work")
         for bookmark in bookmarks:
-            if bookmark.item.item_type == ItemType.WORK:
-                self._client.works.sync(bookmark.item, formats=formats)
-            else:
-                self._client._debug_log(f"Skipping {bookmark.item.item_type} download for {bookmark.item.title}")
+            if bookmark.item_type == ItemType.WORK:
+                self._client.works.sync(bookmark.item_id, formats=formats)
+            elif bookmark.item_type == ItemType.SERIES:
+                self._client.series.sync(bookmark.item_id, formats=formats)
 
             if self._client.USE_HISTORY:
                 self._client.update_stats({"last_tracked_bookmark": bookmark.id})

@@ -9,7 +9,6 @@ from tqdm import TqdmExperimentalWarning
 
 from ao3_sync.api.client import AO3ApiClient
 from ao3_sync.api.enums import DownloadFormat
-from ao3_sync.api.models import Work
 
 warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
@@ -30,7 +29,7 @@ class WorksApi:
     def __init__(self, client: AO3ApiClient):
         self._client = client
 
-    def sync(self, work: Work, formats: list[DownloadFormat] | Literal["all"] = "all"):
+    def sync(self, work_id: str, formats: list[DownloadFormat] | Literal["all"] = "all"):
         """
         Syncs a work from AO3.
 
@@ -38,11 +37,11 @@ class WorksApi:
             work (Work): Work to sync
         """
 
-        download_links = self.fetch_download_links(work, formats)
+        download_links = self.fetch_download_links(work_id, formats)
         for link_path in download_links:
-            self.download(work, link_path)
+            self.download(work_id, link_path)
 
-    def fetch_download_links(self, work: Work, formats: list[DownloadFormat] | Literal["all"] = "all"):
+    def fetch_download_links(self, work_id: str, formats: list[DownloadFormat] | Literal["all"] = "all"):
         """
         Fetches the download links for the given work.
 
@@ -52,7 +51,7 @@ class WorksApi:
         Returns:
             download_links (list[str]): List of download links
         """
-        work_url = f"{self.URL_PATH}/{work.id}"
+        work_url = f"{self.URL_PATH}/{work_id}"
         work_page: Any = self._client.get_or_fetch(work_url)
 
         download_links = (
@@ -72,7 +71,7 @@ class WorksApi:
 
     def download(
         self,
-        work: Work,
+        work_id: str,
         download_url: str,
     ):
         """
@@ -85,8 +84,8 @@ class WorksApi:
         parsed_path = urlparse(download_url)
         filename = os.path.basename(parsed_path.path)
         ext = Path(filename).suffix
-        self._client._debug_log(f"Downloading {ext} for work: {work.title}")
+        self._client._debug_log(f"Downloading {ext} for work: {work_id}")
         content = self._client._download_file(download_url)
         self._client._save_downloaded_file(filename, content)
 
-        self._client._debug_log("Downloaded work:", work.title)
+        self._client._debug_log("Downloaded work:", work_id)
