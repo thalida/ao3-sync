@@ -26,7 +26,8 @@ class SeriesApi:
         Syncs all the works in a series from AO3.
 
         Args:
-            series (Series): Series to sync
+            series_id (str): Series ID to sync
+            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
         """
 
         works = self.fetch_works(series_id)
@@ -38,7 +39,7 @@ class SeriesApi:
         Fetches a series from AO3.
 
         Returns:
-            series (Series): AO3 series
+            works_list (list[str]): List of work IDs in the series
         """
 
         series_page: Any = self._client.get_or_fetch(f"{self.URL_PATH}/{series_id}")

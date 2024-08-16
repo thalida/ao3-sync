@@ -59,47 +59,60 @@ def shared_options(func):
     @click.option(
         "--debug/--no-debug",
         "debug",
-        default=api.DEBUG,
+        default=api.debug,
         help="Enable debug mode",
     )
     @click.option(
         "--debug-cache/--no-debug-cache",
         "use_debug_cache",
-        default=api.USE_DEBUG_CACHE,
+        default=api.use_debug_cache,
         help="Enable or disable the debug cache",
     )
     @click.option(
         "--history/--no-history",
         "use_history",
-        default=api.USE_HISTORY,
+        default=api.use_history,
         help="Enable or disable history",
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
-        debug = kwargs.pop("debug", api.DEBUG)
-        use_debug_cache = kwargs.pop("use_debug_cache", api.USE_DEBUG_CACHE)
-        use_history = kwargs.pop("use_history", api.USE_HISTORY)
+        debug = kwargs.pop("debug", api.debug)
+        use_debug_cache = kwargs.pop("use_debug_cache", api.use_debug_cache)
+        use_history = kwargs.pop("use_history", api.use_history)
 
         username = kwargs.pop("username")
         password = kwargs.pop("password")
 
-        api.DEBUG = debug
-        api.USE_DEBUG_CACHE = use_debug_cache
-        api.USE_HISTORY = use_history
+        api.debug = debug
+        api.use_debug_cache = use_debug_cache
+        api.use_history = use_history
 
         click.secho("AO3 Sync", bold=True, color=True)
         click.secho("Press Ctrl+C to cancel \n", color=True)
 
-        if api.DEBUG:
-            click.secho("DEBUG MODE         ENABLED", bold=True, fg="yellow", color=True)
+        if api.debug:
+            click.secho(
+                "DEBUG MODE         ENABLED",
+                bold=True,
+                fg="yellow",
+                color=True,
+            )
+            click.secho(
+                f"DEBUG CACHE     {'ENABLED' if api.use_debug_cache else 'DISABLED'}",
+                bold=True,
+                fg="yellow",
+                color=True,
+            )
 
-        if api.DEBUG and not api.USE_DEBUG_CACHE:
-            click.secho("DEBUG CACHE        DISABLED", bold=True, fg="cyan", color=True)
+        if not api.use_history:
+            click.secho(
+                "HISTORY            DISABLED",
+                bold=True,
+                fg="cyan",
+                color=True,
+            )
 
-        if not api.USE_HISTORY:
-            click.secho("HISTORY            DISABLED", bold=True, fg="cyan", color=True)
-
-        if api.DEBUG or not api.USE_HISTORY:
+        if api.debug or not api.use_history:
             click.echo()
 
         has_username = username is not None and len(username) > 0

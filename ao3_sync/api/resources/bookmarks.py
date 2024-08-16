@@ -130,8 +130,8 @@ class BookmarksApi:
         if query_params["page"] < 1:
             raise ao3_sync.api.exceptions.FailedRequest("Page number must be greater than 0")
 
-        stats = self._client.get_stats()
-        last_tracked_bookmark = stats.get("last_tracked_bookmark") if stats else None
+        history = self._client.get_history()
+        last_tracked_bookmark = history.get("last_tracked_bookmark") if history else None
 
         bookmarks_page: Any = self._client.get_or_fetch(
             self.URL_PATH,
@@ -146,7 +146,7 @@ class BookmarksApi:
                 self._client._debug_error(f"Skipping bookmark {idx} as it has no ID")
                 continue
 
-            if self._client.USE_HISTORY and bookmark_id == last_tracked_bookmark:
+            if self._client.use_history and bookmark_id == last_tracked_bookmark:
                 self._client._debug_log(f"Stopping at bookmark {idx} as it is already cached")
                 break
 
@@ -219,8 +219,8 @@ class BookmarksApi:
             elif bookmark.item_type == ItemType.SERIES:
                 self._client.series.sync(bookmark.item_id, formats=formats)
 
-            if self._client.USE_HISTORY:
-                self._client.update_stats({"last_tracked_bookmark": bookmark.id})
+            if self._client.use_history:
+                self._client.update_history({"last_tracked_bookmark": bookmark.id})
 
             progress_bar.update(1)
 

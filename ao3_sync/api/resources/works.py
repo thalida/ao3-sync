@@ -34,7 +34,8 @@ class WorksApi:
         Syncs a work from AO3.
 
         Args:
-            work (Work): Work to sync
+            work_id (str): Work ID to sync
+            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
         """
 
         download_links = self.fetch_download_links(work_id, formats)
@@ -46,7 +47,8 @@ class WorksApi:
         Fetches the download links for the given work.
 
         Args:
-            work (Work): Work to fetch download links for
+            work_id (str): Work ID to fetch download links for
+            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
 
         Returns:
             download_links (list[str]): List of download links
@@ -78,7 +80,7 @@ class WorksApi:
         Downloads the work download files for the given work.
 
         Args:
-            work (Work): Work to download
+            work_id (str): Work ID to download
             download_url (str): URL of the work download file
         """
         parsed_path = urlparse(download_url)

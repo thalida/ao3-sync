@@ -46,15 +46,15 @@ class AO3ApiClient(BaseSettings):
     Attributes:
         username (str): AO3 username
         password (SecretStr): AO3 password
-        HOST (str): AO3 host
-        NUM_REQUESTS_PER_SECOND (float): Number of requests per second
-        OUTPUT_FOLDER (str): Output folder
-        DOWNLOADS_FOLDER (str): Downloads folder
-        STATS_FILE (str): Stats file
-        USE_HISTORY (bool): Use history
-        DEBUG (bool): Debug mode
-        USE_DEBUG_CACHE (bool): Use debug cache
-        DEBUG_CACHE_FOLDER (str): Debug cache folder
+        host (str): AO3 host
+        num_requests_per_second (float | int): Number of requests per second
+        output_dir (str): Output directory
+        downloads_dir (str): Downloads directory
+        use_history (bool): Use history
+        history_filename (str): History filename
+        debug (bool): Debug mode
+        use_debug_cache (bool): Use debug cache
+        debug_cache_dir (str): Debug cache directory
 
     """
 
@@ -62,6 +62,7 @@ class AO3ApiClient(BaseSettings):
         env_prefix="AO3_",
         extra="ignore",
         env_ignore_empty=True,
+        case_sensitive=False,
     )
 
     username: str | None = None
@@ -69,23 +70,23 @@ class AO3ApiClient(BaseSettings):
 
     _http_client: LimiterSession
 
-    HOST: str = "https://archiveofourown.org"
-    NUM_REQUESTS_PER_SECOND: float | int = 0.2
+    host: str = "https://archiveofourown.org"
+    num_requests_per_second: float | int = 0.2
 
-    OUTPUT_FOLDER: str = "output"
-    DOWNLOADS_FOLDER: str = "downloads"
-    STATS_FILE: str = "stats.json"
+    output_dir: str = "output"
+    downloads_dir: str = "downloads"
 
-    USE_HISTORY: bool = True
+    use_history: bool = True
+    history_filename: str = "history.json"
 
-    DEBUG: bool = False
-    USE_DEBUG_CACHE: bool = True
-    DEBUG_CACHE_FOLDER: str = "debug_cache"
+    debug: bool = False
+    use_debug_cache: bool = True
+    debug_cache_dir: str = "debug_cache"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._http_client = AO3LimiterSession(self.HOST, per_second=self.NUM_REQUESTS_PER_SECOND)
+        self._http_client = AO3LimiterSession(self.host, per_second=self.num_requests_per_second)
         self._http_client.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
@@ -216,7 +217,7 @@ class AO3ApiClient(BaseSettings):
 
         cache_key = self._get_cache_key(url, query_params)
 
-        if self.DEBUG and self.USE_DEBUG_CACHE:
+        if self.debug and self.use_debug_cache:
             self._debug_log(f"Cache key for {url} is {cache_key}")
             contents = self._get_cached_file(cache_key)
 
@@ -229,7 +230,7 @@ class AO3ApiClient(BaseSettings):
             else:
                 contents = res.text
 
-            if self.DEBUG and self.USE_DEBUG_CACHE:
+            if self.debug and self.use_debug_cache:
                 self._save_cached_file(cache_key, contents)
 
         if not contents:
@@ -237,7 +238,7 @@ class AO3ApiClient(BaseSettings):
 
         return contents
 
-    def get_output_folder(self):
+    def get_output_dir(self):
         """
         Get the output folder
 
@@ -245,9 +246,9 @@ class AO3ApiClient(BaseSettings):
             (Path): Output folder
         """
 
-        return Path(self.OUTPUT_FOLDER)
+        return Path(self.output_dir)
 
-    def get_stats_filepath(self) -> Path:
+    def get_history_filepath(self) -> Path:
         """
         Get the stats file path
 
@@ -255,9 +256,9 @@ class AO3ApiClient(BaseSettings):
             (Path): Stats file path
         """
 
-        return self.get_output_folder() / self.STATS_FILE
+        return self.get_output_dir() / self.history_filename
 
-    def get_stats(
+    def get_history(
         self,
     ):
         """
@@ -267,12 +268,12 @@ class AO3ApiClient(BaseSettings):
             (dict): Stats
         """
 
-        filepath = self.get_stats_filepath()
+        filepath = self.get_history_filepath()
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 return json.load(f)
 
-    def update_stats(self, data=None):
+    def update_history(self, data=None):
         """
         Update the internal API stats
 
@@ -283,22 +284,22 @@ class AO3ApiClient(BaseSettings):
         if data is None:
             data = {}
 
-        curr_stats = self.get_stats()
+        curr_stats = self.get_history()
         if curr_stats:
             data = {**curr_stats, **data}
 
-        filepath = self.get_stats_filepath()
+        filepath = self.get_history_filepath()
         with open(filepath, "w") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
-    def get_downloads_folder(self):
+    def get_downloads_dir(self):
         """
         Get the downloads folder
 
         Returns:
             (Path): Downloads folder
         """
-        return self.get_output_folder() / self.DOWNLOADS_FOLDER
+        return self.get_output_dir() / self.downloads_dir
 
     def _download_file(self, relative_path):
         self._debug_log(f"Downloading file at {relative_path}")
@@ -310,7 +311,7 @@ class AO3ApiClient(BaseSettings):
         return file_content
 
     def _save_downloaded_file(self, filename, data: str | bytes):
-        download_folder = self.get_downloads_folder()
+        download_folder = self.get_downloads_dir()
         downloaded_filepath = download_folder / filename
         self._debug_log(f"Saving downloaded file: {downloaded_filepath}")
         os.makedirs(download_folder, exist_ok=True)
@@ -324,7 +325,7 @@ class AO3ApiClient(BaseSettings):
         return hashlib.sha1(source_str.encode()).hexdigest()
 
     def _get_cache_filepath(self, cache_key: str) -> Path:
-        return self.get_output_folder() / self.DEBUG_CACHE_FOLDER / f"{cache_key}"
+        return self.get_output_dir() / self.debug_cache_dir / f"{cache_key}"
 
     def _get_cached_file(self, cache_key: str):
         filepath = self._get_cache_filepath(cache_key)
@@ -354,7 +355,7 @@ class AO3ApiClient(BaseSettings):
         Debug Mode Only: Basic log
         """
 
-        if not self.DEBUG:
+        if not self.debug:
             return
 
         logger.opt(depth=1).debug(*args, **kwargs)
@@ -363,7 +364,7 @@ class AO3ApiClient(BaseSettings):
         """
         Debug Mode Only: Error log
         """
-        if not self.DEBUG:
+        if not self.debug:
             return
 
         logger.opt(depth=1).error(*args, **kwargs)
@@ -372,7 +373,7 @@ class AO3ApiClient(BaseSettings):
         """
         Debug Mode Only: Info log
         """
-        if not self.DEBUG:
+        if not self.debug:
             return
 
         logger.opt(depth=1).info(*args, **kwargs)
