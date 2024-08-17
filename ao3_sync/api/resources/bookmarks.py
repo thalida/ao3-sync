@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 
 import parsel
 from tqdm import tqdm
@@ -57,7 +57,16 @@ class BookmarksApi:
             query_params=query_params,
         )
         bookmarks.reverse()
-        self.download(bookmarks, formats=formats)
+
+        def update_history(bookmark_id):
+            history = self._client.get_history()
+            if sort_by == BookmarksSortOption.DATE_BOOKMARKED:
+                history.bookmarks.date_bookmarked_last_bookmark = bookmark_id
+            elif sort_by == BookmarksSortOption.DATE_UPDATED:
+                history.bookmarks.date_updated_last_bookmark = bookmark_id
+            self._client.update_history(history)
+
+        self.download(bookmarks, formats=formats, after_item_sync=update_history)
 
     def fetch_pages(
         self,
@@ -133,13 +142,14 @@ class BookmarksApi:
 
         query_params["page"] = page
         query_params["user_id"] = self._client.auth.username
-        query_params["sort_column"] = BOOKMARKS_SORT_QUERY_PARAM[sort_by]
+        query_params["bookmark_search[sort_column]"] = BOOKMARKS_SORT_QUERY_PARAM[sort_by]
+
+        print(query_params)
 
         if query_params["page"] < 1:
             raise ao3_sync.api.exceptions.FailedRequest("Page number must be greater than 0")
 
         history = self._client.get_history()
-        last_tracked_bookmark = history.get("last_tracked_bookmark") if history else None
 
         bookmarks_page: Any = self._client.get_or_fetch(
             self.URL_PATH,
@@ -154,8 +164,15 @@ class BookmarksApi:
                 self._client._debug_error(f"Skipping bookmark {idx} as it has no ID")
                 continue
 
-            if self._client.use_history and bookmark_id == last_tracked_bookmark:
-                self._client._debug_log(f"Stopping at bookmark {idx} as it is already cached")
+            if self._client.use_history:
+                if (
+                    sort_by == BookmarksSortOption.DATE_BOOKMARKED
+                    and history.bookmarks.date_bookmarked_last_bookmark == bookmark_id
+                ) or (
+                    sort_by == BookmarksSortOption.DATE_UPDATED
+                    and history.bookmarks.date_updated_last_bookmark == bookmark_id
+                ):
+                    self._client._debug_log(f"Stopping at bookmark {idx} as it is already cached")
                 break
 
             title_raw = bookmark_el.css("h4.heading a:not(rel)")
@@ -205,6 +222,7 @@ class BookmarksApi:
         self,
         bookmarks: list[Bookmark],
         formats: list[DownloadFormat] = DEFAULT_DOWNLOAD_FORMATS,
+        after_item_sync: Callable[[str], None] | None = None,
     ):
         """
         Downloads the work download files for the given bookmarks.
@@ -228,8 +246,8 @@ class BookmarksApi:
             elif bookmark.item_type == ItemType.SERIES:
                 self._client.series.sync(bookmark.item_id, formats=formats)
 
-            if self._client.use_history:
-                self._client.update_history({"last_tracked_bookmark": bookmark.id})
+            if after_item_sync:
+                after_item_sync(bookmark.id)
 
             progress_bar.update(1)
 

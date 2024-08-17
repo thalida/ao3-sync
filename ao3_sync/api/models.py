@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 from ao3_sync.api.enums import ItemType
 
 
@@ -16,3 +18,20 @@ class Bookmark:
     id: str
     item_type: ItemType
     item_id: str
+
+
+class ApiBookmarksHistory(BaseModel):
+    date_bookmarked_last_bookmark: str | None = None
+    date_updated_last_bookmark: str | None = None
+
+
+class ApiHistory(BaseModel):
+    """
+    Represents an API history
+
+    Attributes:
+        last_bookmark_id (str): Last bookmark ID
+        last_bookmark_item_type (ItemType): Last bookmark item type
+    """
+
+    bookmarks: ApiBookmarksHistory = ApiBookmarksHistory()

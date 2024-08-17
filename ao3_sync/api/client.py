@@ -15,6 +15,7 @@ from rich.console import Console
 from tqdm import TqdmExperimentalWarning
 
 import ao3_sync.api.exceptions
+from ao3_sync.api.models import ApiHistory
 
 if TYPE_CHECKING:
     from ao3_sync.api.resources.auth import AuthApi
@@ -254,9 +255,12 @@ class AO3ApiClient(BaseSettings):
         filepath = self.get_history_filepath()
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
-                return json.load(f)
+                history_json = json.load(f)
+                return ApiHistory(**history_json)
 
-    def update_history(self, data=None):
+        return ApiHistory()
+
+    def update_history(self, data: ApiHistory | None = None):
         """
         Update the internal API stats
 
@@ -264,16 +268,14 @@ class AO3ApiClient(BaseSettings):
             data (dict): Data to update
         """
 
-        if data is None:
-            data = {}
+        history = self.get_history()
 
-        curr_stats = self.get_history()
-        if curr_stats:
-            data = {**curr_stats, **data}
+        if data:
+            history = history.model_copy(update=data.model_dump())
 
         filepath = self.get_history_filepath()
         with open(filepath, "w") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(history.model_dump(), f, ensure_ascii=False, indent=4)
 
     def get_downloads_dir(self):
         """
