@@ -1,17 +1,13 @@
-import warnings
-from typing import Any, Literal
+from typing import Any
 
 import parsel
-from tqdm import TqdmExperimentalWarning
-from tqdm.rich import tqdm
+from tqdm import tqdm
 from yaspin import yaspin
 
 import ao3_sync.api.exceptions
 from ao3_sync.api.client import AO3ApiClient
 from ao3_sync.api.enums import DownloadFormat, ItemType
 from ao3_sync.api.models import Bookmark
-
-warnings.simplefilter("ignore", category=TqdmExperimentalWarning)
 
 
 class BookmarksApi:
@@ -35,7 +31,7 @@ class BookmarksApi:
         start_page=1,
         end_page=None,
         query_params=None,
-        formats: list[DownloadFormat] | Literal["all"] = "all",
+        formats: list[DownloadFormat] = [DownloadFormat.ALL],
     ):
         """
         Downloads the user's bookmarks from AO3.
@@ -44,7 +40,7 @@ class BookmarksApi:
             start_page (int): Starting page of bookmarks to download. Defaults to 1
             end_page (int): Ending page of bookmarks to download. Defaults to None
             query_params (dict): Query parameters for bookmarks
-            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
+            formats (list[DownloadFormat]): Formats to download. Defaults to [DownloadFormat.ALL]
         """
         bookmarks = self.fetch_pages(
             start_page=start_page,
@@ -196,22 +192,23 @@ class BookmarksApi:
     def download(
         self,
         bookmarks: list[Bookmark],
-        formats: list[DownloadFormat] | Literal["all"] = "all",
+        formats: list[DownloadFormat] = [DownloadFormat.ALL],
     ):
         """
         Downloads the work download files for the given bookmarks.
 
         Args:
             bookmarks (list[Bookmark]): List of bookmarks to download
-            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
+            formats (list[DownloadFormat]): Formats to download. Defaults to [DownloadFormat.ALL]
 
         """
 
         if not bookmarks or len(bookmarks) == 0:
-            self._client._log("No bookmarks to download")
+            self._client._log("\nNo bookmarks to download")
             return
 
-        self._client._log(f"Downloading {len(bookmarks)} bookmarks")
+        format_values = [format.value for format in formats]
+        self._client._log(f"\nDownloading {', '.join(format_values)} files for {len(bookmarks)} bookmarks")
         progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work")
         for bookmark in bookmarks:
             if bookmark.item_type == ItemType.WORK:

@@ -7,6 +7,7 @@ from yaspin import yaspin
 import ao3_sync.api.exceptions
 from ao3_sync.api import AO3ApiClient
 from ao3_sync.api.enums import DownloadFormat
+from ao3_sync.utils import seralize_download_format
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -270,8 +271,8 @@ def cli(ctx):
 @click.option(
     "--format",
     "formats",
-    type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
-    default=["all"],
+    type=click.Choice([f.value for f in DownloadFormat]),
+    default=[DownloadFormat.ALL.value],
     show_default=True,
     help="Formats to download",
     multiple=True,
@@ -281,6 +282,8 @@ def bookmarks(ctx, api, **kwargs):
     Sync AO3 Bookmarks
     """
     click.secho("\nSyncing AO3 Bookmarks", bold=True, color=True)
+
+    kwargs["formats"] = seralize_download_format(kwargs.get("formats"))
 
     try:
         api.bookmarks.sync(**kwargs)
@@ -305,8 +308,8 @@ def bookmarks(ctx, api, **kwargs):
 @click.option(
     "--format",
     "formats",
-    type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
-    default=["all"],
+    type=click.Choice([f.value for f in DownloadFormat]),
+    default=[DownloadFormat.ALL.value],
     show_default=True,
     help="Formats to download",
     multiple=True,
@@ -316,6 +319,8 @@ def work(ctx, api, **kwargs):
     Sync AO3 Work
     """
     click.secho("\nSyncing AO3 Work", bold=True, color=True)
+
+    kwargs["formats"] = seralize_download_format(kwargs.get("formats"))
 
     try:
         api.works.sync(**kwargs)
@@ -340,8 +345,8 @@ def work(ctx, api, **kwargs):
 @click.option(
     "--format",
     "formats",
-    type=click.Choice(["all"] + [f.value for f in DownloadFormat]),
-    default=["all"],
+    type=click.Choice([f.value for f in DownloadFormat]),
+    default=[DownloadFormat.ALL.value],
     show_default=True,
     help="Formats to download",
     multiple=True,
@@ -351,6 +356,8 @@ def series(ctx, api, **kwargs):
     Sync AO3 Work
     """
     click.secho("\nSyncing AO3 Series", bold=True, color=True)
+
+    kwargs["formats"] = seralize_download_format(kwargs.get("formats"))
 
     try:
         api.series.sync(**kwargs)

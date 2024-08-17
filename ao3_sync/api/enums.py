@@ -6,12 +6,16 @@ class DownloadFormat(Enum):
     Enum for AO3 download formats
 
     Attributes:
+        ALL (str): all
+
         HTML (str): HTML
         EPUB (str): EPUB
         MOBI (str): MOBI
         PDF (str): PDF
         AZW3 (str): AZW3
     """
+
+    ALL = "all"
 
     HTML = "html"
     EPUB = "epub"

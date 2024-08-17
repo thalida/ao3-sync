@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any
 
 import parsel
 
@@ -21,13 +21,13 @@ class SeriesApi:
     def __init__(self, client):
         self._client = client
 
-    def sync(self, series_id: str, formats: list[DownloadFormat] | Literal["all"] = "all"):
+    def sync(self, series_id: str, formats: list[DownloadFormat] = [DownloadFormat.ALL]):
         """
         Syncs all the works in a series from AO3.
 
         Args:
             series_id (str): Series ID to sync
-            formats (list[DownloadFormat] | Literal["all"]): Formats to download. Defaults to "all"
+            formats (list[DownloadFormat]): Formats to download. Defaults to [DownloadFormat.ALL]
         """
 
         works = self.fetch_works(series_id)
