@@ -38,7 +38,7 @@ class WorksApi:
         """
 
         download_links = self.fetch_download_links(work_id, formats)
-        progress_bar = tqdm(total=len(download_links), desc=f"Downloading work {work_id}", unit="file")
+        progress_bar = tqdm(total=len(download_links), desc=f"Work {work_id}", unit="file")
         for link_path in download_links:
             self.download(work_id, link_path)
             progress_bar.update(1)

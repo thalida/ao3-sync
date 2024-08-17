@@ -1,6 +1,7 @@
 from typing import Any
 
 import parsel
+from tqdm import tqdm
 
 from ao3_sync.api.enums import DownloadFormat
 
@@ -31,8 +32,11 @@ class SeriesApi:
         """
 
         works = self.fetch_works(series_id)
+        progress_bar = tqdm(total=len(works), desc=f"Series {series_id}", unit="work")
         for work_id in works:
             self._client.works.sync(work_id, formats=formats)
+            progress_bar.update(1)
+        progress_bar.close()
 
     def fetch_works(self, series_id: str) -> list[str]:
         """
