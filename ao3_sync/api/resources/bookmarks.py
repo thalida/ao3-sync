@@ -6,7 +6,14 @@ from yaspin import yaspin
 
 import ao3_sync.api.exceptions
 from ao3_sync.api.client import AO3ApiClient
-from ao3_sync.api.enums import DownloadFormat, ItemType
+from ao3_sync.api.enums import (
+    BOOKMARKS_SORT_QUERY_PARAM,
+    DEFAULT_BOOKMARKS_SORT_OPTION,
+    DEFAULT_DOWNLOAD_FORMATS,
+    BookmarksSortOption,
+    DownloadFormat,
+    ItemType,
+)
 from ao3_sync.api.models import Bookmark
 
 
@@ -30,8 +37,9 @@ class BookmarksApi:
         self,
         start_page=1,
         end_page=None,
+        sort_by: BookmarksSortOption = DEFAULT_BOOKMARKS_SORT_OPTION,
         query_params=None,
-        formats: list[DownloadFormat] = [DownloadFormat.ALL],
+        formats: list[DownloadFormat] = DEFAULT_DOWNLOAD_FORMATS,
     ):
         """
         Downloads the user's bookmarks from AO3.
@@ -40,11 +48,12 @@ class BookmarksApi:
             start_page (int): Starting page of bookmarks to download. Defaults to 1
             end_page (int): Ending page of bookmarks to download. Defaults to None
             query_params (dict): Query parameters for bookmarks
-            formats (list[DownloadFormat]): Formats to download. Defaults to [DownloadFormat.ALL]
+            formats (list[DownloadFormat]): Formats to download. Defaults to DEFAULT_DOWNLOAD_FORMATS
         """
         bookmarks = self.fetch_pages(
             start_page=start_page,
             end_page=end_page,
+            sort_by=sort_by,
             query_params=query_params,
         )
         bookmarks.reverse()
@@ -54,6 +63,7 @@ class BookmarksApi:
         self,
         start_page=1,
         end_page=None,
+        sort_by: BookmarksSortOption = DEFAULT_BOOKMARKS_SORT_OPTION,
         query_params=None,
     ) -> list[Bookmark]:
         """
@@ -93,16 +103,21 @@ class BookmarksApi:
         if num_pages_to_download > 1:
             self._client._log(f"Downloading {num_pages_to_download} pages, from page {start_page} to {end_page}")
         else:
-            self._client._log(f"Downloading page {start_page} of {num_pages}")
+            self._client._log(f"Downloading page {start_page}")
 
         bookmark_list = []
-        for page_num in tqdm(range(start_page, end_page + 1), desc="Bookmarks Pages", unit="pg"):
-            bookmarks = self.fetch_page(page_num, query_params=query_params)
+        for page_num in tqdm(range(start_page, end_page + 1), desc="Pages", unit="pg"):
+            bookmarks = self.fetch_page(page_num, sort_by=sort_by, query_params=query_params)
             bookmark_list.extend(bookmarks)
 
         return bookmark_list
 
-    def fetch_page(self, page: int, query_params=None):
+    def fetch_page(
+        self,
+        page: int,
+        sort_by: BookmarksSortOption = DEFAULT_BOOKMARKS_SORT_OPTION,
+        query_params=None,
+    ):
         """
         Gets a page of bookmarks for the user.
 
@@ -113,15 +128,12 @@ class BookmarksApi:
             bookmarks (Bookmark): List of bookmarks. Ordered from newest to oldest.
         """
 
-        default_params = {
-            "sort_column": "created_at",
-        }
         if query_params is None:
             query_params = {}
 
-        query_params = {**default_params, **query_params}
         query_params["page"] = page
         query_params["user_id"] = self._client.auth.username
+        query_params["sort_column"] = BOOKMARKS_SORT_QUERY_PARAM[sort_by]
 
         if query_params["page"] < 1:
             raise ao3_sync.api.exceptions.FailedRequest("Page number must be greater than 0")
@@ -192,14 +204,14 @@ class BookmarksApi:
     def download(
         self,
         bookmarks: list[Bookmark],
-        formats: list[DownloadFormat] = [DownloadFormat.ALL],
+        formats: list[DownloadFormat] = DEFAULT_DOWNLOAD_FORMATS,
     ):
         """
         Downloads the work download files for the given bookmarks.
 
         Args:
             bookmarks (list[Bookmark]): List of bookmarks to download
-            formats (list[DownloadFormat]): Formats to download. Defaults to [DownloadFormat.ALL]
+            formats (list[DownloadFormat]): Formats to download. Defaults to DEFAULT_DOWNLOAD_FORMATS
 
         """
 
@@ -209,7 +221,7 @@ class BookmarksApi:
 
         format_values = [format.value for format in formats]
         self._client._log(f"\nDownloading {', '.join(format_values)} files for {len(bookmarks)} bookmarks")
-        progress_bar = tqdm(total=len(bookmarks), desc="Works", unit="work")
+        progress_bar = tqdm(total=len(bookmarks), desc="Bookmarks", unit="bkmk")
         for bookmark in bookmarks:
             if bookmark.item_type == ItemType.WORK:
                 self._client.works.sync(bookmark.item_id, formats=formats)

@@ -1,4 +1,9 @@
-from ao3_sync.api.enums import DownloadFormat
+from ao3_sync.api.enums import (
+    DEFAULT_BOOKMARKS_SORT_OPTION,
+    DEFAULT_DOWNLOAD_FORMATS,
+    BookmarksSortOption,
+    DownloadFormat,
+)
 
 
 def seralize_download_format(format_values: list[str] | None) -> list[DownloadFormat]:
@@ -13,9 +18,23 @@ def seralize_download_format(format_values: list[str] | None) -> list[DownloadFo
     """
 
     if format_values is None:
-        return [DownloadFormat.ALL]
-
-    if DownloadFormat.ALL.value in format_values:
-        return [DownloadFormat.ALL]
+        return DEFAULT_DOWNLOAD_FORMATS
 
     return [DownloadFormat(format) for format in format_values]
+
+
+def seralize_sort_by(sort_by: str | None) -> BookmarksSortOption:
+    """
+    Converts a string to a BookmarksSortOption enum.
+
+    Args:
+        sort_by (str): Sort by string
+
+    Returns:
+        BookmarksSortOption: BookmarksSortOption enum
+    """
+
+    if sort_by is None:
+        return DEFAULT_BOOKMARKS_SORT_OPTION
+
+    return BookmarksSortOption(sort_by)

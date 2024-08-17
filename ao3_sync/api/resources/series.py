@@ -3,7 +3,7 @@ from typing import Any
 import parsel
 from tqdm import tqdm
 
-from ao3_sync.api.enums import DownloadFormat
+from ao3_sync.api.enums import DEFAULT_DOWNLOAD_FORMATS, DownloadFormat
 
 
 class SeriesApi:
@@ -22,13 +22,13 @@ class SeriesApi:
     def __init__(self, client):
         self._client = client
 
-    def sync(self, series_id: str, formats: list[DownloadFormat] = [DownloadFormat.ALL]):
+    def sync(self, series_id: str, formats: list[DownloadFormat] = DEFAULT_DOWNLOAD_FORMATS):
         """
         Syncs all the works in a series from AO3.
 
         Args:
             series_id (str): Series ID to sync
-            formats (list[DownloadFormat]): Formats to download. Defaults to [DownloadFormat.ALL]
+            formats (list[DownloadFormat]): Formats to download. Defaults to DEFAULT_DOWNLOAD_FORMATS
         """
 
         works = self.fetch_works(series_id)

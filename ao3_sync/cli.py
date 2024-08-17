@@ -6,8 +6,13 @@ from yaspin import yaspin
 
 import ao3_sync.api.exceptions
 from ao3_sync.api import AO3ApiClient
-from ao3_sync.api.enums import DownloadFormat
-from ao3_sync.utils import seralize_download_format
+from ao3_sync.api.enums import (
+    DEFAULT_BOOKMARKS_SORT_OPTION_VALUE,
+    DEFAULT_DOWNLOAD_FORMATS_VALUES,
+    BookmarksSortOption,
+    DownloadFormat,
+)
+from ao3_sync.utils import seralize_download_format, seralize_sort_by
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -18,7 +23,10 @@ def create_option_group(options):
     return [
         {
             "name": ":lock: Authentication",
-            "options": ["--username", "--password"],
+            "options": [
+                "--username",
+                "--password",
+            ],
             "panel_styles": {
                 "border_style": "yellow",
             },
@@ -26,7 +34,12 @@ def create_option_group(options):
         options,
         {
             "name": "Advanced Options",
-            "options": ["--downloads-dir", "--requests-per-second", "--history", "--history-file"],
+            "options": [
+                "--downloads-dir",
+                "--requests-per-second",
+                "--history",
+                "--history-file",
+            ],
         },
         {
             "name": "Debug Options",
@@ -46,7 +59,13 @@ click.rich_click.OPTION_GROUPS = {
     "ao3-sync bookmarks": create_option_group(
         {
             "name": "Sync Bookmarks Options",
-            "options": ["--start-page", "--end-page", "--query-params", "--format"],
+            "options": [
+                "--start-page",
+                "--end-page",
+                "--sort-by",
+                "--query-params",
+                "--format",
+            ],
             "panel_styles": {
                 "border_style": "white",
             },
@@ -55,7 +74,10 @@ click.rich_click.OPTION_GROUPS = {
     "ao3-sync series": create_option_group(
         {
             "name": "Sync Series Options",
-            "options": ["--series", "--format"],
+            "options": [
+                "--series",
+                "--format",
+            ],
             "panel_styles": {
                 "border_style": "white",
             },
@@ -64,7 +86,10 @@ click.rich_click.OPTION_GROUPS = {
     "ao3-sync work": create_option_group(
         {
             "name": "Sync Work Options",
-            "options": ["--work", "--format"],
+            "options": [
+                "--work",
+                "--format",
+            ],
             "panel_styles": {
                 "border_style": "white",
             },
@@ -249,16 +274,24 @@ def cli(ctx):
     "start_page",
     type=int,
     default=1,
-    help="Start page number",
     show_default=True,
+    help="Start page number",
 )
 @click.option(
     "--end-page",
     "end_page",
     type=int,
     default=None,
-    help="End page number",
     show_default=True,
+    help="End page number",
+)
+@click.option(
+    "--sort-by",
+    "sort_by",
+    type=click.Choice([f.value for f in BookmarksSortOption]),
+    default=DEFAULT_BOOKMARKS_SORT_OPTION_VALUE,
+    show_default=True,
+    help="Sort bookmarks by",
 )
 @click.option(
     "--query-params",
@@ -272,7 +305,7 @@ def cli(ctx):
     "--format",
     "formats",
     type=click.Choice([f.value for f in DownloadFormat]),
-    default=[DownloadFormat.ALL.value],
+    default=DEFAULT_DOWNLOAD_FORMATS_VALUES,
     show_default=True,
     help="Formats to download",
     multiple=True,
@@ -284,6 +317,7 @@ def bookmarks(ctx, api, **kwargs):
     click.secho("\nSyncing AO3 Bookmarks", bold=True, color=True)
 
     kwargs["formats"] = seralize_download_format(kwargs.get("formats"))
+    kwargs["sort_by"] = seralize_sort_by(kwargs.get("sort_by"))
 
     try:
         api.bookmarks.sync(**kwargs)
@@ -309,7 +343,7 @@ def bookmarks(ctx, api, **kwargs):
     "--format",
     "formats",
     type=click.Choice([f.value for f in DownloadFormat]),
-    default=[DownloadFormat.ALL.value],
+    default=DEFAULT_DOWNLOAD_FORMATS_VALUES,
     show_default=True,
     help="Formats to download",
     multiple=True,
@@ -346,7 +380,7 @@ def work(ctx, api, **kwargs):
     "--format",
     "formats",
     type=click.Choice([f.value for f in DownloadFormat]),
-    default=[DownloadFormat.ALL.value],
+    default=DEFAULT_DOWNLOAD_FORMATS_VALUES,
     show_default=True,
     help="Formats to download",
     multiple=True,
