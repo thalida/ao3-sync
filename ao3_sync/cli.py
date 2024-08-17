@@ -2,6 +2,8 @@ import functools
 
 import rich_click as click
 from pydantic import SecretStr
+from rich.console import Console
+from rich.table import Table
 from yaspin import yaspin
 
 import ao3_sync.api.exceptions
@@ -15,6 +17,8 @@ from ao3_sync.api.enums import (
 from ao3_sync.utils import seralize_download_format, seralize_sort_by
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+
+console = Console()
 
 base_api = AO3ApiClient()
 
@@ -198,30 +202,34 @@ def api_command(func):
         click.secho("AO3 Sync", bold=True, color=True)
         click.secho("Press Ctrl+C to cancel \n", color=True)
 
+        table = Table(
+            title="Settings",
+            title_justify="left",
+            title_style="bold",
+            show_lines=False,
+            show_edge=True,
+            show_header=False,
+            expand=True,
+            pad_edge=True,
+        )
+        table.add_column("Setting")
+        table.add_column("Value")
+        table.add_row("Downloads Directory", api.downloads_dir, end_section=True)
+
+        if api.num_requests_per_second != base_api.num_requests_per_second:
+            table.add_row("Requests Per Second", f"{api.num_requests_per_second}", end_section=True)
+
+        if api.use_history:
+            table.add_row("History", "[green]Enabled")
+            table.add_row("History File", api.history_filepath, end_section=True)
+
         if api.debug:
-            click.secho(
-                "DEBUG MODE         ENABLED",
-                bold=True,
-                fg="yellow",
-                color=True,
-            )
-            click.secho(
-                f"DEBUG CACHE     {'ENABLED' if api.use_debug_cache else 'DISABLED'}",
-                bold=True,
-                fg="yellow",
-                color=True,
-            )
+            table.add_row("Debug", "[green]Enabled")
+            table.add_row("Debug Cache", "[green]Enabled" if api.use_debug_cache else "[red]Disabled")
+            table.add_row("Debug Cache Directory", api.debug_cache_dir)
 
-        if not api.use_history:
-            click.secho(
-                "HISTORY            DISABLED",
-                bold=True,
-                fg="cyan",
-                color=True,
-            )
-
-        if api.debug or not api.use_history:
-            click.echo()
+        console.print(table)
+        click.echo()
 
         has_username = username is not None and len(username) > 0
         has_password = password is not None and len(password) > 0

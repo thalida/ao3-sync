@@ -67,7 +67,7 @@ class AO3ApiClient(BaseSettings):
     downloads_dir: str = "output/downloads/"
     num_requests_per_second: float | int = 0.2
 
-    use_history: bool = True
+    use_history: bool = False
     history_filepath: str = "output/history.json"
 
     debug: bool = False
