@@ -1,6 +1,6 @@
 site_name: AO3 Sync Docs
-site_url: 'https://docs.example.com/'
-repo_url: https://github.com/squidfunk/mkdocs-material
+site_url: https://thalida.github.io/ao3-sync/
+repo_url: https://github.com/thalida/ao3-sync
 
 nav:
   - AO3 Sync:
