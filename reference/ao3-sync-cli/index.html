@@ -8,26 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://docs.example.com/">
+        <link rel="canonical" href="https://docs.example.com/reference/ao3-sync-cli/">
       
       
+        <link rel="prev" href="../../examples/using-docker/">
       
-        <link rel="next" href="install/">
+      
+        <link rel="next" href="../api/client/">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.31">
     
     
       
-        <title>Welcome - AO3 Sync Docs</title>
+        <title>ao3-sync CLI - AO3 Sync Docs</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.3cba04c6.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.3cba04c6.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -46,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -92,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="AO3 Sync Docs" class="md-header__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
+    <a href="../.." title="AO3 Sync Docs" class="md-header__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Welcome
+              ao3-sync CLI
             
           </span>
         </div>
@@ -187,13 +189,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
           
   
     
@@ -213,7 +213,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="examples/basic-cli/" class="md-tabs__link">
+        <a href="../../examples/basic-cli/" class="md-tabs__link">
           
   
     
@@ -229,11 +229,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="reference/ao3-sync-cli/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
     
@@ -251,7 +253,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="developer-setup/" class="md-tabs__link">
+      <a href="../../developer-setup/" class="md-tabs__link">
         
   
     
@@ -291,7 +293,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="AO3 Sync Docs" class="md-nav__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
+    <a href="../.." title="AO3 Sync Docs" class="md-nav__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -318,8 +320,6 @@
       
   
   
-    
-  
   
   
     
@@ -334,22 +334,19 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="." class="md-nav__link md-nav__link--active">
+            <a href="../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -360,13 +357,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_1" id="__nav_1_label" tabindex="">
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             AO3 Sync
@@ -382,7 +379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="install/" class="md-nav__link">
+      <a href="../../install/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -462,7 +459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/basic-cli/" class="md-nav__link">
+      <a href="../../examples/basic-cli/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -483,7 +480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/env-vars/" class="md-nav__link">
+      <a href="../../examples/env-vars/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -504,7 +501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/advanced-cli/" class="md-nav__link">
+      <a href="../../examples/advanced-cli/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -525,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/basic-programmatic/" class="md-nav__link">
+      <a href="../../examples/basic-programmatic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -546,7 +543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/scheduling/" class="md-nav__link">
+      <a href="../../examples/scheduling/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -567,7 +564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/using-docker/" class="md-nav__link">
+      <a href="../../examples/using-docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -592,8 +589,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -604,17 +603,20 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -625,7 +627,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Reference
@@ -636,10 +638,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="reference/ao3-sync-cli/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    ao3-sync CLI
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -648,6 +670,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ao3-sync-bookmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      bookmarks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ao3-sync-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      series
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ao3-sync-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      work
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -710,7 +779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/client/" class="md-nav__link">
+      <a href="../api/client/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -731,7 +800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/enums/" class="md-nav__link">
+      <a href="../api/enums/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -752,7 +821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/exceptions/" class="md-nav__link">
+      <a href="../api/exceptions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -773,7 +842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/models/" class="md-nav__link">
+      <a href="../api/models/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -842,7 +911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/auth/" class="md-nav__link">
+      <a href="../api/resources/auth/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -863,7 +932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/bookmarks/" class="md-nav__link">
+      <a href="../api/resources/bookmarks/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -884,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/series/" class="md-nav__link">
+      <a href="../api/resources/series/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -905,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/works/" class="md-nav__link">
+      <a href="../api/resources/works/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -949,7 +1018,7 @@
   
   
     <li class="md-nav__item">
-      <a href="developer-setup/" class="md-nav__link">
+      <a href="../../developer-setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -989,51 +1058,27 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#ao3-sync-bookmarks" class="md-nav__link">
     <span class="md-ellipsis">
-      Quick Start
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick Start">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sync-bookmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      Sync Bookmarks
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Features
+      bookmarks
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#roadmap" class="md-nav__link">
+  <a href="#ao3-sync-series" class="md-nav__link">
     <span class="md-ellipsis">
-      Roadmap
+      series
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ao3-sync-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      work
     </span>
   </a>
   
@@ -1057,32 +1102,121 @@
   
 
 
-<h1 id="ao3-sync">AO3 Sync</h1>
-<p>AO3 Sync is a tool to downlaod your bookmarks from <a href="https://archiveofourown.org">Archive of Our Own</a> (AO3) and save them to your local machine. This tool is designed to be run on a regular basis to keep your local bookmarks up-to-date with your AO3 account.</p>
-<h2 id="quick-start">Quick Start</h2>
-<h3 id="installation">Installation</h3>
-<pre><code class="language-bash">poetry add ao3-sync
+<h1 id="ao3-sync">ao3-sync</h1>
+<p>Archive your AO3 Account</p>
+<p><strong>Usage:</strong></p>
+<pre><code class="language-text">ao3-sync [OPTIONS] COMMAND [ARGS]...
 </code></pre>
-<h3 id="sync-bookmarks">Sync Bookmarks</h3>
-<pre><code class="language-bash">ao3-sync bookmarks
+<p><strong>Options:</strong></p>
+<pre><code class="language-text">  --help  Show this message and exit.
 </code></pre>
-<h2 id="features">Features</h2>
-<ul>
-<li>Set the start and end page for bookmarks</li>
-<li>Sort bookmarks by date bookmarked or date updated</li>
-<li>Specifcy the file format to download (eg. HTML, EPUB, MOBI, PDF, AZW3)</li>
-</ul>
-<h2 id="roadmap">Roadmap</h2>
-<ul>
-<li>[ ] Add support for syncing subscriptions</li>
-<li>[ ] Support filtering and searching bookmarks</li>
-</ul>
+<h2 id="ao3-sync-bookmarks">ao3-sync bookmarks</h2>
+<p>Sync AO3 Bookmarks</p>
+<p><strong>Usage:</strong></p>
+<pre><code class="language-text">ao3-sync bookmarks [OPTIONS]
+</code></pre>
+<p><strong>Options:</strong></p>
+<pre><code class="language-text">  -u, --username TEXT             AO3 Username  [required]
+  -p, --password TEXT             AO3 Password  [required]
+  --output-dir DIRECTORY          Directory to save output  [default: output/]
+  --downloads-dir DIRECTORY       Directory to save downloads. Directory wil
+                                  be nested under output-dir  [default:
+                                  downloads/]
+  --requests-per-second FLOAT     Number of requests per second  [default:
+                                  0.2]
+  --history / --no-history        Enable or disable history  [default:
+                                  history]
+  --history-file PATH             Path to history file. File will be nested
+                                  under output-dir  [default: history.json]
+  --debug / --no-debug            Enable debug mode  [default: no-debug]
+  --debug-cache / --no-debug-cache
+                                  Enable or disable the debug cache  [default:
+                                  debug-cache]
+  --debug-cache-dir DIRECTORY     Directory to save debug cache. Directory
+                                  will be nested under output-dir  [default:
+                                  debug_cache]
+  --start-page INTEGER            Start page number  [default: 1]
+  --end-page INTEGER              End page number
+  --sort-by [date-bookmarked|date-updated]
+                                  Sort bookmarks by  [default: date-
+                                  bookmarked]
+  --query-params TEXT             Query parameters
+  --format [html|epub|mobi|pdf|azw3]
+                                  Formats to download  [default: html, epub,
+                                  mobi, pdf, azw3]
+  --help                          Show this message and exit.
+</code></pre>
+<h2 id="ao3-sync-series">ao3-sync series</h2>
+<p>Sync AO3 Work</p>
+<p><strong>Usage:</strong></p>
+<pre><code class="language-text">ao3-sync series [OPTIONS]
+</code></pre>
+<p><strong>Options:</strong></p>
+<pre><code class="language-text">  -u, --username TEXT             AO3 Username  [required]
+  -p, --password TEXT             AO3 Password  [required]
+  --output-dir DIRECTORY          Directory to save output  [default: output/]
+  --downloads-dir DIRECTORY       Directory to save downloads. Directory wil
+                                  be nested under output-dir  [default:
+                                  downloads/]
+  --requests-per-second FLOAT     Number of requests per second  [default:
+                                  0.2]
+  --history / --no-history        Enable or disable history  [default:
+                                  history]
+  --history-file PATH             Path to history file. File will be nested
+                                  under output-dir  [default: history.json]
+  --debug / --no-debug            Enable debug mode  [default: no-debug]
+  --debug-cache / --no-debug-cache
+                                  Enable or disable the debug cache  [default:
+                                  debug-cache]
+  --debug-cache-dir DIRECTORY     Directory to save debug cache. Directory
+                                  will be nested under output-dir  [default:
+                                  debug_cache]
+  --series TEXT                   [required]
+  --format [html|epub|mobi|pdf|azw3]
+                                  Formats to download  [default: html, epub,
+                                  mobi, pdf, azw3]
+  --help                          Show this message and exit.
+</code></pre>
+<h2 id="ao3-sync-work">ao3-sync work</h2>
+<p>Sync AO3 Work</p>
+<p><strong>Usage:</strong></p>
+<pre><code class="language-text">ao3-sync work [OPTIONS]
+</code></pre>
+<p><strong>Options:</strong></p>
+<pre><code class="language-text">  -u, --username TEXT             AO3 Username  [required]
+  -p, --password TEXT             AO3 Password  [required]
+  --output-dir DIRECTORY          Directory to save output  [default: output/]
+  --downloads-dir DIRECTORY       Directory to save downloads. Directory wil
+                                  be nested under output-dir  [default:
+                                  downloads/]
+  --requests-per-second FLOAT     Number of requests per second  [default:
+                                  0.2]
+  --history / --no-history        Enable or disable history  [default:
+                                  history]
+  --history-file PATH             Path to history file. File will be nested
+                                  under output-dir  [default: history.json]
+  --debug / --no-debug            Enable debug mode  [default: no-debug]
+  --debug-cache / --no-debug-cache
+                                  Enable or disable the debug cache  [default:
+                                  debug-cache]
+  --debug-cache-dir DIRECTORY     Directory to save debug cache. Directory
+                                  will be nested under output-dir  [default:
+                                  debug_cache]
+  --work TEXT                     [required]
+  --format [html|epub|mobi|pdf|azw3]
+                                  Formats to download  [default: html, epub,
+                                  mobi, pdf, azw3]
+  --help                          Show this message and exit.
+</code></pre>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -1105,15 +1239,31 @@
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
+          
+          <a href="../../examples/using-docker/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Using Docker">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Using Docker
+              </div>
+            </div>
+          </a>
+        
         
           
-          <a href="install/" class="md-footer__link md-footer__link--next" aria-label="Next: Installation">
+          <a href="../api/client/" class="md-footer__link md-footer__link--next" aria-label="Next: AO3ApiClient">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Installation
+                AO3ApiClient
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1147,10 +1297,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest"], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      <script src="../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
       
     
   </body>

@@ -8,26 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://docs.example.com/">
+        <link rel="canonical" href="https://docs.example.com/examples/basic-programmatic/">
       
       
+        <link rel="prev" href="../advanced-cli/">
       
-        <link rel="next" href="install/">
+      
+        <link rel="next" href="../scheduling/">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.31">
     
     
       
-        <title>Welcome - AO3 Sync Docs</title>
+        <title>Programmatic Usage - AO3 Sync Docs</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.3cba04c6.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.3cba04c6.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -46,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -72,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ao3-sync" class="md-skip">
+        <a href="#programmatic-usage" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="AO3 Sync Docs" class="md-header__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
+    <a href="../.." title="AO3 Sync Docs" class="md-header__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Welcome
+              Programmatic Usage
             
           </span>
         </div>
@@ -187,13 +189,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
           
   
     
@@ -209,11 +209,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="examples/basic-cli/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../basic-cli/" class="md-tabs__link">
           
   
     
@@ -233,7 +235,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="reference/ao3-sync-cli/" class="md-tabs__link">
+        <a href="../../reference/ao3-sync-cli/" class="md-tabs__link">
           
   
     
@@ -251,7 +253,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="developer-setup/" class="md-tabs__link">
+      <a href="../../developer-setup/" class="md-tabs__link">
         
   
     
@@ -291,7 +293,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="AO3 Sync Docs" class="md-nav__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
+    <a href="../.." title="AO3 Sync Docs" class="md-nav__button md-logo" aria-label="AO3 Sync Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -318,8 +320,6 @@
       
   
   
-    
-  
   
   
     
@@ -334,22 +334,19 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="." class="md-nav__link md-nav__link--active">
+            <a href="../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -360,13 +357,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_1" id="__nav_1_label" tabindex="">
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             AO3 Sync
@@ -382,7 +379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="install/" class="md-nav__link">
+      <a href="../../install/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -407,8 +404,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -427,17 +426,20 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -448,7 +450,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Examples
@@ -462,7 +464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/basic-cli/" class="md-nav__link">
+      <a href="../basic-cli/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -483,7 +485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/env-vars/" class="md-nav__link">
+      <a href="../env-vars/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -504,7 +506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/advanced-cli/" class="md-nav__link">
+      <a href="../advanced-cli/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -522,10 +524,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="examples/basic-programmatic/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -534,6 +545,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -546,7 +558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/scheduling/" class="md-nav__link">
+      <a href="../scheduling/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -567,7 +579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/using-docker/" class="md-nav__link">
+      <a href="../using-docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -639,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/ao3-sync-cli/" class="md-nav__link">
+      <a href="../../reference/ao3-sync-cli/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -710,7 +722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/client/" class="md-nav__link">
+      <a href="../../reference/api/client/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -731,7 +743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/enums/" class="md-nav__link">
+      <a href="../../reference/api/enums/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -752,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/exceptions/" class="md-nav__link">
+      <a href="../../reference/api/exceptions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -773,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/models/" class="md-nav__link">
+      <a href="../../reference/api/models/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -842,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/auth/" class="md-nav__link">
+      <a href="../../reference/api/resources/auth/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -863,7 +875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/bookmarks/" class="md-nav__link">
+      <a href="../../reference/api/resources/bookmarks/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -884,7 +896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/series/" class="md-nav__link">
+      <a href="../../reference/api/resources/series/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -905,7 +917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/resources/works/" class="md-nav__link">
+      <a href="../../reference/api/resources/works/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -949,7 +961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="developer-setup/" class="md-nav__link">
+      <a href="../../developer-setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -982,65 +994,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      Quick Start
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick Start">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sync-bookmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      Sync Bookmarks
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Features
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#roadmap" class="md-nav__link">
-    <span class="md-ellipsis">
-      Roadmap
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1057,26 +1010,7 @@
   
 
 
-<h1 id="ao3-sync">AO3 Sync</h1>
-<p>AO3 Sync is a tool to downlaod your bookmarks from <a href="https://archiveofourown.org">Archive of Our Own</a> (AO3) and save them to your local machine. This tool is designed to be run on a regular basis to keep your local bookmarks up-to-date with your AO3 account.</p>
-<h2 id="quick-start">Quick Start</h2>
-<h3 id="installation">Installation</h3>
-<pre><code class="language-bash">poetry add ao3-sync
-</code></pre>
-<h3 id="sync-bookmarks">Sync Bookmarks</h3>
-<pre><code class="language-bash">ao3-sync bookmarks
-</code></pre>
-<h2 id="features">Features</h2>
-<ul>
-<li>Set the start and end page for bookmarks</li>
-<li>Sort bookmarks by date bookmarked or date updated</li>
-<li>Specifcy the file format to download (eg. HTML, EPUB, MOBI, PDF, AZW3)</li>
-</ul>
-<h2 id="roadmap">Roadmap</h2>
-<ul>
-<li>[ ] Add support for syncing subscriptions</li>
-<li>[ ] Support filtering and searching bookmarks</li>
-</ul>
+<h1 id="programmatic-usage">Programmatic Usage</h1>
 
 
 
@@ -1105,15 +1039,31 @@
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
+          
+          <a href="../advanced-cli/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Advanced CLI Usage">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Advanced CLI Usage
+              </div>
+            </div>
+          </a>
+        
         
           
-          <a href="install/" class="md-footer__link md-footer__link--next" aria-label="Next: Installation">
+          <a href="../scheduling/" class="md-footer__link md-footer__link--next" aria-label="Next: Scheduling">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Installation
+                Scheduling
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1147,10 +1097,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest"], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      <script src="../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
       
     
   </body>
