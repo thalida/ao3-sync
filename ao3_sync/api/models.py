@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -34,4 +35,5 @@ class ApiHistory(BaseModel):
         last_bookmark_item_type (ItemType): Last bookmark item type
     """
 
+    updated_at: datetime | None = None
     bookmarks: ApiBookmarksHistory = ApiBookmarksHistory()

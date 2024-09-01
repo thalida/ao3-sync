@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import json
 import os
@@ -224,7 +225,7 @@ class AO3ApiClient(BaseSettings):
             else:
                 contents = res.text
 
-            if self.debug and self.use_debug_cache:
+            if self.debug:
                 self._save_debug_cache_file(cache_key, contents)
 
         if not contents:
@@ -260,7 +261,7 @@ class AO3ApiClient(BaseSettings):
 
         return ApiHistory()
 
-    def update_history(self, data: ApiHistory | None = None):
+    def update_history(self, history: ApiHistory):
         """
         Update the internal API stats
 
@@ -268,10 +269,7 @@ class AO3ApiClient(BaseSettings):
             data (dict): Data to update
         """
 
-        history = self.get_history()
-
-        if data:
-            history = history.model_copy(update=data.model_dump())
+        history.updated_at = datetime.datetime.now()
 
         filepath = self.get_history_filepath()
         with open(filepath, "w") as f:

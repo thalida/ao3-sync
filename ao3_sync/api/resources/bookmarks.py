@@ -144,8 +144,6 @@ class BookmarksApi:
         query_params["user_id"] = self._client.auth.username
         query_params["bookmark_search[sort_column]"] = BOOKMARKS_SORT_QUERY_PARAM[sort_by]
 
-        print(query_params)
-
         if query_params["page"] < 1:
             raise ao3_sync.api.exceptions.FailedRequest("Page number must be greater than 0")
 
@@ -164,15 +162,17 @@ class BookmarksApi:
                 self._client._debug_error(f"Skipping bookmark {idx} as it has no ID")
                 continue
 
-            if self._client.use_history:
-                if (
+            if self._client.use_history and (
+                (
                     sort_by == BookmarksSortOption.DATE_BOOKMARKED
                     and history.bookmarks.date_bookmarked_last_bookmark == bookmark_id
-                ) or (
+                )
+                or (
                     sort_by == BookmarksSortOption.DATE_UPDATED
                     and history.bookmarks.date_updated_last_bookmark == bookmark_id
-                ):
-                    self._client._debug_log(f"Stopping at bookmark {idx} as it is already cached")
+                )
+            ):
+                self._client._debug_log(f"Stopping at bookmark {idx} as it is already cached")
                 break
 
             title_raw = bookmark_el.css("h4.heading a:not(rel)")
