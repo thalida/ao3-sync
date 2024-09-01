@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "ao3-sync"
 version = "0.1.0"
-description = ""
+description = "A CLI tool to download your bookmarked works from Archive of Our Own."
 authors = ["Thalida Noel <hello@thalida.com>", "Eddy Hintze <eddy@gitx.codes>"]
+keywords = ["ao3", "archiveofourown", "fanfiction", "cli", "tool", "download", "bookmark"]
 license = "MIT"
 readme = "README.md"
 
