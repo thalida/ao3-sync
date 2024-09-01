@@ -66,15 +66,17 @@ class AO3ApiClient(BaseSettings):
     username: str | None = None
     password: SecretStr | None = None
 
-    downloads_dir: str = "output/downloads/"
+    output_dir: str = "output/"
+
+    downloads_dir: str = "downloads/"
     num_requests_per_second: float | int = 0.2
 
     use_history: bool = False
-    history_filepath: str = "output/history.json"
+    history_filepath: str = "history.json"
 
     debug: bool = False
     use_debug_cache: bool = True
-    debug_cache_dir: str = "output/debug_cache"
+    debug_cache_dir: str = "debug_cache"
 
     _http_client: LimiterSession
 
@@ -233,6 +235,15 @@ class AO3ApiClient(BaseSettings):
 
         return contents
 
+    def get_output_dir(self):
+        """
+        Get the output folder
+
+        Returns:
+            (Path): Output folder
+        """
+        return Path(self.output_dir)
+
     def get_history_filepath(self) -> Path:
         """
         Get the stats file path
@@ -241,7 +252,7 @@ class AO3ApiClient(BaseSettings):
             (Path): Stats file path
         """
 
-        return Path(self.history_filepath)
+        return self.get_output_dir() / self.history_filepath
 
     def get_history(
         self,
@@ -292,7 +303,7 @@ class AO3ApiClient(BaseSettings):
         Returns:
             (Path): Downloads folder
         """
-        return Path(self.downloads_dir)
+        return self.get_output_dir() / self.downloads_dir
 
     def download_file(self, relative_path):
         """
@@ -336,7 +347,7 @@ class AO3ApiClient(BaseSettings):
         Returns:
             (Path): Debug cache folder
         """
-        return Path(self.debug_cache_dir)
+        return self.get_output_dir() / self.debug_cache_dir
 
     def _get_debug_cache_key(self, url: str, query_params: dict | None = None) -> str:
         query_string = json.dumps(query_params, sort_keys=True) if query_params else ""

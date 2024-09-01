@@ -39,6 +39,7 @@ def create_option_group(options):
         {
             "name": "Advanced Options",
             "options": [
+                "--output-dir",
                 "--downloads-dir",
                 "--requests-per-second",
                 "--history",
@@ -130,12 +131,20 @@ def api_command(func):
         required=True,
     )
     @click.option(
+        "--output-dir",
+        "output_dir",
+        type=click.Path(file_okay=False, writable=True),
+        default=base_api.output_dir,
+        show_default=True,
+        help="Directory to save output",
+    )
+    @click.option(
         "--downloads-dir",
         "downloads_dir",
         type=click.Path(file_okay=False, writable=True),
         default=base_api.downloads_dir,
         show_default=True,
-        help="Directory to save downloads",
+        help="Directory to save downloads. Directory wil be nested under output-dir",
     )
     @click.option(
         "--requests-per-second",
@@ -158,7 +167,7 @@ def api_command(func):
         type=click.Path(file_okay=True, writable=True),
         default=base_api.history_filepath,
         show_default=True,
-        help="Path to history file",
+        help="Path to history file. File will be nested under output-dir",
     )
     @click.option(
         "--debug/--no-debug",
@@ -180,13 +189,14 @@ def api_command(func):
         type=click.Path(file_okay=False, writable=True),
         default=base_api.debug_cache_dir,
         show_default=True,
-        help="Directory to save debug cache",
+        help="Directory to save debug cache. Directory will be nested under output-dir",
     )
     @functools.wraps(func)
     def wrapper(ctx, **kwargs):
         api = AO3ApiClient(
             username=kwargs.pop("username"),
             password=kwargs.pop("password"),
+            output_dir=kwargs.pop("output_dir"),
             downloads_dir=kwargs.pop("downloads_dir"),
             num_requests_per_second=kwargs.pop("num_requests_per_second"),
             use_history=kwargs.pop("use_history"),
@@ -214,19 +224,19 @@ def api_command(func):
         )
         table.add_column("Setting")
         table.add_column("Value")
-        table.add_row("Downloads Directory", api.downloads_dir, end_section=True)
+        table.add_row("Downloads Directory", str(api.get_downloads_dir().resolve()), end_section=True)
 
         if api.num_requests_per_second != base_api.num_requests_per_second:
             table.add_row("Requests Per Second", f"{api.num_requests_per_second}", end_section=True)
 
         if api.use_history:
             table.add_row("History", "[green]Enabled")
-            table.add_row("History File", api.history_filepath, end_section=True)
+            table.add_row("History File", str(api.get_history_filepath().resolve()), end_section=True)
 
         if api.debug:
             table.add_row("Debug", "[green]Enabled")
             table.add_row("Debug Cache", "[green]Enabled" if api.use_debug_cache else "[red]Disabled")
-            table.add_row("Debug Cache Directory", api.debug_cache_dir)
+            table.add_row("Debug Cache Directory", str(api.get_debug_cache_dir().resolve()), end_section=True)
 
         console.print(table)
         click.echo()
