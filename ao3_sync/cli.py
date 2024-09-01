@@ -41,7 +41,7 @@ def create_option_group(options):
             "options": [
                 "--output-dir",
                 "--downloads-dir",
-                "--requests-per-second",
+                "--requests-delay-seconds",
                 "--history",
                 "--history-file",
             ],
@@ -147,10 +147,10 @@ def api_command(func):
         help="Directory to save downloads. Directory wil be nested under output-dir",
     )
     @click.option(
-        "--requests-per-second",
-        "num_requests_per_second",
+        "--requests-delay-seconds",
+        "requests_delay_seconds",
         type=float,
-        default=base_api.num_requests_per_second,
+        default=base_api.requests_delay_seconds,
         show_default=True,
         help="Number of requests per second",
     )
@@ -198,7 +198,7 @@ def api_command(func):
             password=kwargs.pop("password"),
             output_dir=kwargs.pop("output_dir"),
             downloads_dir=kwargs.pop("downloads_dir"),
-            num_requests_per_second=kwargs.pop("num_requests_per_second"),
+            requests_delay_seconds=kwargs.pop("requests_delay_seconds"),
             use_history=kwargs.pop("use_history"),
             history_filepath=kwargs.pop("history_filepath"),
             debug=kwargs.pop("debug"),
@@ -226,8 +226,8 @@ def api_command(func):
         table.add_column("Value")
         table.add_row("Downloads Directory", str(api.get_downloads_dir().resolve()), end_section=True)
 
-        if api.num_requests_per_second != base_api.num_requests_per_second:
-            table.add_row("Requests Per Second", f"{api.num_requests_per_second}", end_section=True)
+        if api.requests_delay_seconds != base_api.requests_delay_seconds:
+            table.add_row("Requests Delay (seconds)", str(api.requests_delay_seconds), end_section=True)
 
         if api.use_history:
             table.add_row("History", "[green]Enabled")

@@ -45,7 +45,7 @@ class AO3ApiClient(BaseSettings):
         username (str): AO3 username
         password (SecretStr): AO3 password
         host (str): AO3 host
-        num_requests_per_second (float | int): Number of requests per second
+        requests_delay_seconds (float | int): Delay between requests
         output_dir (str): Output directory
         downloads_dir (str): Downloads directory
         use_history (bool): Use history
@@ -69,7 +69,7 @@ class AO3ApiClient(BaseSettings):
     output_dir: str = "output/"
 
     downloads_dir: str = "downloads/"
-    num_requests_per_second: float | int = 0.2
+    requests_delay_seconds: float = 4.0
 
     use_history: bool = False
     history_filepath: str = "history.json"
@@ -83,7 +83,7 @@ class AO3ApiClient(BaseSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._http_client = AO3LimiterSession(per_second=self.num_requests_per_second)
+        self._http_client = AO3LimiterSession(burst=1, per_second=1 / self.requests_delay_seconds)
         self._http_client.headers.update(
             {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0"}
         )
