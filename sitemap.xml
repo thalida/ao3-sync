@@ -1,92 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://docs.example.com/</loc>
+         <loc>https://thalida.github.io/ao3-sync/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/developer-setup/</loc>
+         <loc>https://thalida.github.io/ao3-sync/developer-setup/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/install/</loc>
+         <loc>https://thalida.github.io/ao3-sync/install/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/examples/advanced-cli/</loc>
+         <loc>https://thalida.github.io/ao3-sync/examples/advanced-cli/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/examples/basic-cli/</loc>
+         <loc>https://thalida.github.io/ao3-sync/examples/basic-cli/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/examples/basic-programmatic/</loc>
+         <loc>https://thalida.github.io/ao3-sync/examples/basic-programmatic/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/examples/env-vars/</loc>
+         <loc>https://thalida.github.io/ao3-sync/examples/env-vars/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/examples/scheduling/</loc>
+         <loc>https://thalida.github.io/ao3-sync/examples/scheduling/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/examples/using-docker/</loc>
+         <loc>https://thalida.github.io/ao3-sync/examples/using-docker/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/ao3-sync-cli/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/ao3-sync-cli/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/client/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/client/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/enums/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/enums/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/exceptions/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/exceptions/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/models/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/models/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/resources/auth/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/resources/auth/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/resources/bookmarks/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/resources/bookmarks/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/resources/series/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/resources/series/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.example.com/reference/api/resources/works/</loc>
+         <loc>https://thalida.github.io/ao3-sync/reference/api/resources/works/</loc>
          <lastmod>2024-09-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
