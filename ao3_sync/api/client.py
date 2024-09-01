@@ -310,7 +310,8 @@ class AO3ApiClient(BaseSettings):
         return file_content
 
     def save_file(self, filename, data: str | bytes):
-        download_folder = self.get_downloads_dir()
+        filename_without_ext = os.path.splitext(filename)[0]
+        download_folder = self.get_downloads_dir() / filename_without_ext
         downloaded_filepath = download_folder / filename
         self._debug_log(f"Saving downloaded file: {downloaded_filepath}")
         os.makedirs(download_folder, exist_ok=True)
