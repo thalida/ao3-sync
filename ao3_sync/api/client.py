@@ -256,8 +256,11 @@ class AO3ApiClient(BaseSettings):
         filepath = self.get_history_filepath()
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
-                history_json = json.load(f)
-                return ApiHistory(**history_json)
+                try:
+                    history_json = json.load(f)
+                    return ApiHistory(**history_json)
+                except json.JSONDecodeError:
+                    return ApiHistory()
 
         return ApiHistory()
 
@@ -273,7 +276,14 @@ class AO3ApiClient(BaseSettings):
 
         filepath = self.get_history_filepath()
         with open(filepath, "w") as f:
-            json.dump(history.model_dump(), f, ensure_ascii=False, indent=4)
+            json.dump(
+                history.model_dump(),
+                f,
+                ensure_ascii=False,
+                indent=4,
+                default=str,
+                sort_keys=True,
+            )
 
     def get_downloads_dir(self):
         """
