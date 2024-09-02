@@ -46,7 +46,12 @@ class SeriesApi:
             works_list (list[str]): List of work IDs in the series
         """
 
-        series_page: Any = self._client.get_or_fetch(f"{self.URL_PATH}/{series_id}")
+        try:
+            series_page: Any = self._client.get_or_fetch(f"{self.URL_PATH}/{series_id}")
+        except Exception as e:
+            self._client._debug_error(f"Failed to fetch series {series_id}: {e}")
+            return []
+
         works_element_list = parsel.Selector(series_page).css("ul.series.work > li")
 
         works_list: list[str] = []

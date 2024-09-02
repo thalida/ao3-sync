@@ -149,10 +149,14 @@ class BookmarksApi:
 
         history = self._client.get_history()
 
-        bookmarks_page: Any = self._client.get_or_fetch(
-            self.URL_PATH,
-            query_params=query_params,
-        )
+        try:
+            bookmarks_page: Any = self._client.get_or_fetch(
+                self.URL_PATH,
+                query_params=query_params,
+            )
+        except Exception as e:
+            self._client._debug_error(f"Failed to fetch bookmarks page {page}: {e}")
+            return []
 
         bookmark_element_list = parsel.Selector(bookmarks_page).css("ol.bookmark > li")
         bookmark_list: list[Bookmark] = []
@@ -206,10 +210,16 @@ class BookmarksApi:
         Returns:
             num_pages (int): Number of bookmark pages
         """
-        first_page: Any = self._client.get_or_fetch(
-            self.URL_PATH,
-            query_params={"page": 1, "user_id": self._client.auth.username, "sort_column": "created_at"},
-        )
+
+        try:
+            first_page: Any = self._client.get_or_fetch(
+                self.URL_PATH,
+                query_params={"page": 1, "user_id": self._client.auth.username, "sort_column": "created_at"},
+            )
+        except Exception as e:
+            self._client._debug_error(f"Failed to fetch first bookmarks page: {e}")
+            return 0
+
         pagination = parsel.Selector(first_page).css("ol.pagination li").getall()
 
         if len(pagination) < 3:
