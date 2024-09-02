@@ -58,7 +58,12 @@ class WorksApi:
             download_links (list[str]): List of download links
         """
         work_url = f"{self.URL_PATH}/{work_id}"
-        work_page: Any = self._client.get_or_fetch(work_url)
+
+        try:
+            work_page: Any = self._client.get_or_fetch(work_url)
+        except Exception as e:
+            self._client._debug_error(f"Failed to fetch work {work_id}: {e}")
+            return []
 
         download_links = (
             parsel.Selector(work_page).css("#main ul.work.navigation li.download ul li a::attr(href)").getall()
@@ -88,5 +93,8 @@ class WorksApi:
             download_url (str): URL of the work download file
         """
         self._client._debug_log(f"Downloading {download_url} for work: {work_id}")
-        self._client.download_file(download_url)
-        self._client._debug_log("Downloaded work:", work_id)
+        try:
+            self._client.download_file(download_url)
+            self._client._debug_log("Downloaded work:", work_id)
+        except Exception as e:
+            self._client._debug_error(f"Failed to download work {work_id}: {e}")
