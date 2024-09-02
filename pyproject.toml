@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ao3-sync"
-version = "0.1.3"
+version = "0.1.4"
 repository = "https://github.com/thalida/ao3-sync"
 homepage = "https://thalida.github.io/ao3-sync/"
 documentation = "https://thalida.github.io/ao3-sync/"
